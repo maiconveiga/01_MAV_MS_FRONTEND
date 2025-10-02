@@ -131,6 +131,11 @@ body {
   background:#f3f4f6;
   color:#111;
 }
+.btn--danger{
+  background:#fff5f5;
+  color:#b91c1c;
+  border-color:#fecaca;
+}
 
 .btn--ghost{
   background: transparent;
@@ -292,6 +297,7 @@ body {
   padding: var(--sp-3) var(--sp-4) var(--sp-4) var(--sp-4);
   overflow: auto;
 }
+
 /* === Botão de status (Tratativa) === */
 .btn--status{
   border: 1px solid var(--border, #d0d7de);
@@ -312,14 +318,12 @@ body {
   color: #111;
   border-color: #d0d7de;
 }
-.btn--status.st-not:hover{
-  background: #f6f8fa;
-}
+.btn--status.st-not:hover{ background: #f6f8fa; }
 
 /* Em andamento = laranja */
 .btn--status.st-progress{
-  background: #fff7ed;      /* laranja clarinho */
-  color: #9a3412;           /* laranja escuro */
+  background: #fff7ed;
+  color: #9a3412;
   border-color: #fdba74;
 }
 .btn--status.st-progress:hover{
@@ -329,8 +333,8 @@ body {
 
 /* Concluído = verde */
 .btn--status.st-done{
-  background: #ecfdf5;      /* verde clarinho */
-  color: #065f46;           /* verde escuro */
+  background: #ecfdf5;
+  color: #065f46;
   border-color: #86efac;
 }
 .btn--status.st-done:hover{
@@ -340,8 +344,8 @@ body {
 
 /* Oportunidade = azul */
 .btn--status.st-opportunity{
-  background: #eff6ff;      /* azul clarinho */
-  color: #1e40af;           /* azul escuro */
+  background: #eff6ff;
+  color: #1e40af;
   border-color: #93c5fd;
 }
 .btn--status.st-opportunity:hover{
@@ -349,14 +353,10 @@ body {
   border-color: #60a5fa;
 }
 
-.btn--status:focus{
-  outline: 2px solid rgba(59,130,246,.5);
-  outline-offset: 1px;
-}
-.btn--status:active{
-  transform: translateY(1px);
-}
+.btn--status:focus{ outline: 2px solid rgba(59,130,246,.5); outline-offset: 1px; }
+.btn--status:active{ transform: translateY(1px); }
 
+/* Redefinições de sino (mantidas) */
 .bell{ display:inline-flex; vertical-align: middle; margin-right: 6px; }
 .bell svg{ fill: currentColor; }
 .bell--red{ color:#dc2626; }
@@ -364,10 +364,43 @@ body {
 .bell--green{ color:#16a34a; }
 .bell--yellow{ color:#8f6305; }
 
-.btn--status {
-  min-width: 140px;  
-  text-align: center; 
-  justify-content: center;
-  display: inline-flex;
-  align-items: center;
+.btn--status { min-width: 140px;  text-align: center;  justify-content: center; display: inline-flex; align-items: center; }
+
+/* =========================
+   KANBAN (acréscimos)
+   ========================= */
+.kanban{
+  display:flex; gap:12px; align-items:flex-start; padding:8px;
+  width:100%;
+  min-width:100%;
 }
+.kanban__col{
+  flex:1 1 0;
+  min-width:240px;
+  background: var(--bg-subtle);
+  border:1px solid var(--bd-1);
+  border-radius: var(--r-lg);
+  overflow:hidden;
+}
+.kanban__colHeader{
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  padding:10px 12px; background:var(--bg-header); border-bottom:1px solid var(--bd-1);
+  position:sticky; top:0; z-index:1;
+}
+.kanban__colBody{
+  padding:10px; display:grid; gap:10px; min-height: 120px;
+}
+.kanban__card{
+  background:#fff; border:1px solid var(--bd-1); border-radius:10px; padding:10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  cursor:grab;
+}
+.kanban__card--dragging{ opacity:.6; box-shadow:0 6px 18px rgba(0,0,0,.15); }
+.kanban__cardHead{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.kanban__cardTitle{ margin:4px 0 6px; line-height:1.2; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.kanban__cardMeta{ display:flex; justify-content:space-between; gap:8px; font-size:12px; margin-bottom:6px; }
+.kanban__cardBody{ display:grid; gap:6px; }
+.kanban__cardActions{ display:flex; gap:6px; margin-top:8px; }
+
+.badge--count{ height:20px; font-size:11px; border-color:#d1d5db; background:#f9fafb; }
+.pill{ display:inline-block; padding:2px 8px; border:1px solid var(--bd-1); border-radius:999px; font-size:12px; }
