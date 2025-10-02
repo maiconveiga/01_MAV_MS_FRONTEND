@@ -1,0 +1,373 @@
+/* =========================
+   Design Tokens (Base)
+   ========================= */
+:root{
+  /* Cores */
+  --bg-header: #f8fafc;   /* th */
+  --bg-white:  #ffffff;   /* filtros / cards / modal */
+  --bg-subtle: #f6f7f9;   /* barras suaves */
+  --brand:     #1e63a9;   /* barra azul / links */
+  --brand-2:   #2d8cff;   /* botão primário */
+  --text:      #0f172a;
+  --muted:     #475569;
+  --err:       #b91c1c;
+
+  /* Bordas / linhas */
+  --bd-1: #e5e7eb;        /* bordas th/inputs/botoes */
+  --bd-2: #f1f5f9;        /* linhas tbody */
+
+  /* Sombras */
+  --shadow: 0 1px 3px rgba(0,0,0,.05);
+  --shadow-lg: 0 20px 50px rgba(0,0,0,.2);
+
+  /* Espaços / raios */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --sp-1: 6px;
+  --sp-2: 8px;
+  --sp-3: 10px;
+  --sp-4: 12px;
+  --sp-5: 14px;
+  --sp-6: 16px;
+
+  /* Tabela sticky offsets */
+  --thead-title-h: 34px;  /* altura aproximada do header de títulos */
+}
+
+/* =========================
+   Resets & Base
+   ========================= */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+}
+
+/* =========================
+   Layout
+   ========================= */
+.page{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.title{ margin: 0; font-size: 18px; }
+.muted{ color: var(--muted); opacity: .85; }
+.error{ color: var(--err); font-weight: 600; margin-left: var(--sp-4); }
+
+/* Sub-topo (contador/erros) */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: var(--sp-2) var(--sp-4);
+}
+.topbar--subtle{
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--bd-1);
+}
+
+/* Container de tabela */
+.tableWrap{
+  flex: 1 1 auto;
+  height: 80vh;
+  padding: 0 var(--sp-4) var(--sp-4) var(--sp-4);
+  overflow: auto;
+  position: relative; /* necessário p/ sticky */
+}
+
+.tableCard{
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: var(--bg-white);
+}
+
+/* =========================
+   App Bar (Azul)
+   ========================= */
+.appbar{
+  background: var(--brand);
+  color: #fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: var(--sp-3) var(--sp-5);
+  box-shadow: 0 1px 0 rgba(0,0,0,.2) inset;
+}
+.appbar__title{
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+.appbar__actions{
+  display:flex; gap: var(--sp-2); align-items:center;
+}
+
+/* =========================
+   Botões & Links
+   ========================= */
+.btn{
+  cursor:pointer;
+  border:1px solid var(--bd-1);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-3);
+  background:#fff;
+  line-height:1.2;
+  font-size:13px;
+}
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+.btn--primary{
+  background: var(--brand-2);
+  color:#fff;
+  border-color: transparent;
+}
+.btn--secondary{
+  background:#f3f4f6;
+  color:#111;
+}
+
+.btn--ghost{
+  background: transparent;
+  border:1px solid var(--bd-1);
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-sm);
+}
+.btn--active{ background:#111; color:#fff; }
+
+.badge{
+  margin-left: var(--sp-2);
+  font-size:12px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--bd-1);
+  background: #fff;
+}
+
+.link{
+  color: var(--brand);
+  text-decoration: none;
+}
+.link:hover{ text-decoration: underline; }
+
+/* =========================
+   Inputs / Selects
+   ========================= */
+.input{
+  width: 100%;
+  font-size: 12px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-md);
+  outline: none;
+  background: #fff;
+}
+.select{ padding-right: 24px; }
+
+/* minigrid para prioridade min/max e datas */
+.grid2{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+
+/* =========================
+   Tabela
+   ========================= */
+.table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  font-size: 13px;
+}
+
+/* Títulos */
+.thead-title .th{
+  position: sticky;
+  top: 0;
+  background: var(--bg-header);
+  z-index: 2;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--bd-1);
+  padding: 6px 8px;
+  white-space: nowrap;
+  color: #111;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: .04em;
+}
+
+/* Filtros */
+.thead-filters .th{
+  position: sticky;
+  top: var(--thead-title-h);
+  background: var(--bg-white);
+  z-index: 1;
+  border-bottom: 1px solid var(--bd-1);
+  padding: 6px 8px;
+}
+
+.th__inner{ display:flex; align-items:center; justify-content:space-between; gap: var(--sp-2); }
+.th__sort{ display:inline-flex; gap: 2px; }
+.th__sort .btn{ font-size:10px; line-height:1; padding:2px 6px; }
+
+.th{ padding: var(--sp-3); vertical-align: middle; }
+
+/* Células */
+.td{
+  border-bottom: 1px solid var(--bd-2);
+  padding: var(--sp-3) var(--sp-4);
+  vertical-align: middle;
+  word-break: break-word;
+  white-space: normal;
+}
+.td--center{ text-align: center; }
+.td--nowrap{ white-space: nowrap; }
+
+/* Coluna Servidor + sino (sem criar coluna nova) */
+.td--servidor{
+  display:flex; align-items:center; gap: var(--sp-2);
+}
+.bell{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:50%;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.1);
+}
+.bell svg{ display:block; fill:#fff; }
+
+/* Cores do sino */
+.bell--red{    background:#c68896; } /* vermelho */
+.bell--gray{   background:#9ca3af; } /* cinza */
+.bell--green{  background:#64cc8a; } /* verde */
+.bell--yellow{ background:#eab14e; } /* amarelo (fallback) */
+
+/* =========================
+   Modal
+   ========================= */
+.modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+.modal__card{
+  width: min(1100px, 96vw);
+  max-height: 90vh;
+  background: var(--bg-white);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--bd-1);
+  background: var(--bg-header);
+}
+.modal__title{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+.modal__close{
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: var(--sp-2);
+}
+.modal__body{
+  padding: var(--sp-3) var(--sp-4) var(--sp-4) var(--sp-4);
+  overflow: auto;
+}
+/* === Botão de status (Tratativa) === */
+.btn--status{
+  border: 1px solid var(--border, #d0d7de);
+  background: #fff;
+  color: #111;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  line-height: 1;
+  transition: transform .05s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+  box-shadow: 0 1px 0 rgba(0,0,0,.05);
+  cursor: pointer;
+}
+
+/* Não tratado = branco */
+.btn--status.st-not{
+  background: #fff;
+  color: #111;
+  border-color: #d0d7de;
+}
+.btn--status.st-not:hover{
+  background: #f6f8fa;
+}
+
+/* Em andamento = laranja */
+.btn--status.st-progress{
+  background: #fff7ed;      /* laranja clarinho */
+  color: #9a3412;           /* laranja escuro */
+  border-color: #fdba74;
+}
+.btn--status.st-progress:hover{
+  background: #ffedd5;
+  border-color: #fb923c;
+}
+
+/* Concluído = verde */
+.btn--status.st-done{
+  background: #ecfdf5;      /* verde clarinho */
+  color: #065f46;           /* verde escuro */
+  border-color: #86efac;
+}
+.btn--status.st-done:hover{
+  background: #d1fae5;
+  border-color: #4ade80;
+}
+
+/* Oportunidade = azul */
+.btn--status.st-opportunity{
+  background: #eff6ff;      /* azul clarinho */
+  color: #1e40af;           /* azul escuro */
+  border-color: #93c5fd;
+}
+.btn--status.st-opportunity:hover{
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+.btn--status:focus{
+  outline: 2px solid rgba(59,130,246,.5);
+  outline-offset: 1px;
+}
+.btn--status:active{
+  transform: translateY(1px);
+}
+
+.bell{ display:inline-flex; vertical-align: middle; margin-right: 6px; }
+.bell svg{ fill: currentColor; }
+.bell--red{ color:#dc2626; }
+.bell--gray{ color:#6b7280; }
+.bell--green{ color:#16a34a; }
+.bell--yellow{ color:#8f6305; }
+
+.btn--status {
+  min-width: 140px;  
+  text-align: center; 
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+}
