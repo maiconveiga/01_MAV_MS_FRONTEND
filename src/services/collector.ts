@@ -1,7 +1,8 @@
 import type { Session, AlarmItem, AlarmItemUI } from "../types";
 
 
-const COLLECTOR_HOST = "10.2.1.133";
+// const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
+const COLLECTOR_HOST = "10.2.1.133"
 
 function resolveCollectorBase(apiBaseUrl: string): string {
 

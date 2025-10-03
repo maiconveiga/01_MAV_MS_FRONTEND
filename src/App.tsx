@@ -4,6 +4,19 @@ import type { CatalogApi, Session, AlarmItem } from "./types";
 import { fetchCatalog, createApi, updateApi, deleteApi, getApiId } from "./services/manager";
 import { loginAndGetToken, collectAlarmsBatch } from "./services/collector";
 
+/** Permite campos opcionais que usamos no front mas podem não existir no tipo estrito. */
+type CatalogApiLoose = CatalogApi & {
+  IP?: string;
+  Versao?: string;
+  Link?: string;
+  BaseUrl: string;
+  Servidor?: string;
+  Usuario?: string;
+  Senha?: string;
+  QuantidadeAlarmes?: number;
+  offset?: number;
+};
+
 /* =========================
    Helpers / Types
    ========================= */
@@ -41,13 +54,54 @@ type GroupRow = {
   _latest: AlarmItem | null;
 };
 
-const msToDMY = (ms?: number) => {
+// ===== Helpers de Data (robustos e padronizados) =====
+const safeToMs = (s?: string) => {
+  if (!s) return 0;
+  const t = s.trim();
+
+  // ISO completo: 2025-10-03T12:34:56Z ou 2025-10-03T12:34:56
+  if (/^\d{4}-\d{2}-\d{2}T/.test(t)) {
+    const ms = Date.parse(t);
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  // "YYYY-MM-DD HH:mm:ss"
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(t)) {
+    const [datePart, timePart] = t.split(/\s+/);
+    const [Y, M, D] = datePart.split("-").map((n) => Number(n));
+    const [h, m, s2] = (timePart || "00:00:00").split(":").map((n) => Number(n));
+    const dt = new Date(Y, (M || 1) - 1, D || 1, h || 0, m || 0, s2 || 0);
+    return dt.getTime();
+  }
+
+  // "DD/MM/YYYY HH:mm:ss" ou "MM/DD/YYYY HH:mm:ss"
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(t)) {
+    const [datePart, timePart] = t.split(/\s+/);
+    const [a, b, Y] = datePart.split("/").map((n) => Number(n));
+    const [h, m, s2] = (timePart || "00:00:00").split(":").map((n) => Number(n));
+
+    // Força interpretação pt-BR (DD/MM/YYYY).
+    const D = a || 1;
+    const M = b || 1;
+    const dt = new Date(Y || 1970, (M || 1) - 1, D || 1, h || 0, m || 0, s2 || 0);
+    return dt.getTime();
+  }
+
+  // Fallback: tentar parse nativo
+  const ms = Date.parse(t);
+  return Number.isFinite(ms) ? ms : 0;
+};
+
+const msToDMYTime = (ms?: number) => {
   if (!ms) return "—";
   const d = new Date(ms);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
-const isoToMs = (s?: string) => (s ? (Number.isFinite(Date.parse(s)) ? Date.parse(s) : 0) : 0);
+
+// (mantido apenas data/hora completa; versão só data foi removida para evitar warning)
+
+const isoToMs = (s?: string) => safeToMs(s);
 const addHours = (ms: number, h: number) => ms + h * 3_600_000;
 const num = (x: unknown) => {
   const s = String(x ?? "").replace(",", ".").trim();
@@ -83,7 +137,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AlarmItem[]>([]);
 
-  const [catalogLocal, setCatalogLocal] = useState<CatalogApi[]>([]);
+  const [catalogLocal, setCatalogLocal] = useState<CatalogApiLoose[]>([]);
   const [serverNameByBase, setServerNameByBase] = useState<Record<string, string>>({});
   const [offsetByBase, setOffsetByBase] = useState<Record<string, number>>({});
 
@@ -269,14 +323,16 @@ export default function App() {
   type Comment = { id: string; reference: string; text: string; status?: string | null; created_at: string };
   const [autoTratativa, setAutoTratativa] = useState<Record<string, string>>({});
   const [lastStatusByRef, setLastStatusByRef] = useState<Record<string, string>>({});
-  const [lastTextByRef, setLastTextByRef] = useState<Record<string, string>>({});
+  // usamos apenas o setter para evitar TS6133
+  const [, setLastTextByRef] = useState<Record<string, string>>({});
   const [lastStatusAtByRef, setLastStatusAtByRef] = useState<Record<string, number>>({});
   const fetchedAtRef = useRef<Record<string, number>>({});
   const STATUS_TTL_MS = 60_000;
 
-  const COMMENTS_HOST = "10.2.1.133";
+const COMMENTS_HOST = "10.2.1.133";
+  // const COMMENTS_HOST = import.meta.env.VITE_COMMENTS_HOST || "localhost";
   const getVersionForBase = (baseUrl: string): string => {
-    const hit = catalogLocal.find((c) => c.BaseUrl === baseUrl)?.Versao;
+    const hit = (catalogLocal as CatalogApiLoose[]).find((c) => c.BaseUrl === baseUrl)?.Versao;
     if (hit) return String(hit);
     const m = baseUrl.match(/\/api\/V?(\d+)/i);
     return m ? `V${m[1]}` : "V3";
@@ -401,19 +457,19 @@ export default function App() {
       clearApiErrors();
 
       const catalog = await fetchCatalog();
-      setCatalogLocal(catalog);
+      setCatalogLocal(catalog as CatalogApiLoose[]);
 
       const nameBy: Record<string, string> = {};
       const offBy: Record<string, number> = {};
-      for (const a of catalog) {
-        nameBy[a.BaseUrl] = a.Servidor;
+      for (const a of catalog as CatalogApiLoose[]) {
+        nameBy[a.BaseUrl] = a.Servidor || a.BaseUrl.replace(/^https?:\/\//, "");
         offBy[a.BaseUrl] = a.offset ?? 0;
       }
       setServerNameByBase(nameBy);
       setOffsetByBase(offBy);
 
       const aggregated: AlarmItem[] = [];
-      for (const a of catalog) {
+      for (const a of catalog as CatalogApiLoose[]) {
         const baseUrl = a.BaseUrl;
         let port = "";
         try {
@@ -545,7 +601,7 @@ export default function App() {
   const computeBellColor = (g: GroupRow): "red" | "gray" | "green" | "yellow" => {
     const L = g._latest as any;
     const type = String(L?.type ?? g.type ?? "").toLowerCase();
-       const val = String(L?.triggerValue_value ?? L?.triggerValue?.value ?? g.value ?? "").toLowerCase();
+    const val = String(L?.triggerValue_value ?? L?.triggerValue?.value ?? g.value ?? "").toLowerCase();
     if (type.includes("alarm") || type.includes("unreliable")) return "red";
     if (val.includes("offline")) return "gray";
     if (type.includes("normal") || val.includes("online")) return "green";
@@ -595,12 +651,12 @@ export default function App() {
      ========================= */
   const openApisModal = async () => {
     setApisError(null); setApisNotice(null); setForm(emptyForm); setEditingId(null);
-    try { setApisBusy(true); setCatalogLocal(await fetchCatalog()); setApisOpen(true); }
+    try { setApisBusy(true); setCatalogLocal(await fetchCatalog() as CatalogApiLoose[]); setApisOpen(true); }
     catch (e: any) { setApisError(e?.message ?? String(e)); }
     finally { setApisBusy(false); }
   };
   const startCreate = () => { setEditingId(null); setForm(emptyForm); };
-  const startEdit = (api: CatalogApi) => {
+  const startEdit = (api: CatalogApiLoose) => {
     const editing = getApiId(api);
     setEditingId(editing);
     setForm({
@@ -620,7 +676,7 @@ export default function App() {
         Senha: form.Senha ?? "",
       };
       if (editingId) await updateApi(editingId, payload); else await createApi(payload);
-      const list = await fetchCatalog(); setCatalogLocal(list); startCreate();
+      const list = await fetchCatalog(); setCatalogLocal(list as CatalogApiLoose[]); startCreate();
       setApisNotice("Registro salvo."); setTimeout(() => setApisNotice(null), 2500);
       await reload();
     } catch (e: any) { setApisError(e?.message ?? String(e)); }
@@ -629,12 +685,12 @@ export default function App() {
   const removeApi = async (id: string | null) => {
     if (!id) return; if (!confirm("Excluir esta API do catálogo?")) return;
     try { setApisBusy(true); setApisError(null); setApisNotice(null);
-      await deleteApi(id); setCatalogLocal(await fetchCatalog());
+      await deleteApi(id); setCatalogLocal(await fetchCatalog() as CatalogApiLoose[]);
       setApisNotice("API removida."); setTimeout(() => setApisNotice(null), 2500); await reload();
     } catch (e: any) { setApisError(e?.message ?? String(e)); }
     finally { setApisBusy(false); }
   };
-  const testApi = async (api: CatalogApi) => {
+  const testApi = async (api: CatalogApiLoose) => {
     const id = getApiId(api) || `${api.Servidor}-${api.IP}-${api.Versao}`;
     setTestBusyById((p) => ({ ...p, [id]: true })); setApisError(null); setApisNotice(null);
     try {
@@ -769,7 +825,7 @@ export default function App() {
     try { await apiCreateComment(g, { reference: ref, text: "(ajustado via Kanban)", status: lane }); } catch {}
   };
 
-  // === NOVO LAYOUT DO CARD (como antes) + contador no topo direito e clicável ===
+  // === Kanban ===
   const renderKanban = () => {
     const byLane: Record<Lane, GroupRow[]> = { "Não tratado": [], "Em andamento": [], "Concluído": [], "Oportunidade": [] };
     for (const g of groupedSorted) byLane[statusShownForGroup(g) as Lane]?.push(g);
@@ -788,7 +844,6 @@ export default function App() {
                   const bell = computeBellColor(g);
                   const val = g.value ?? "";
                   const un = g.units ?? "";
-                  const link = g.servidorHref;
                   const status = statusShownForGroup(g);
 
                   return (
@@ -800,7 +855,7 @@ export default function App() {
                       onDragEnd={() => setDragKey(null)}
                       style={{ position: "relative" }}
                     >
-                      {/* Contador no canto superior direito, clicável */}
+                      {/* Contador de ocorrências */}
                       <button
                         className="badge badge--count"
                         style={{ position: "absolute", top: 8, right: 8, cursor: "pointer" }}
@@ -811,37 +866,28 @@ export default function App() {
                         x{g.items.length}
                       </button>
 
-                      {/* Cabeçalho: sino + servidor (como antes) */}
+                      {/* Cabeçalho: sino + servidor */}
                       <div className="kanban__cardHead">
                         <Bell color={bell} />
                         <span className="muted">{g.servidorName || "—"}</span>
                       </div>
 
-                      {/* Título principal (nome / referência) */}
-                      <div className="kanban__cardTitle" style={{ marginRight: 40 /* espaço para o badge */ }}>
+                      {/* Título */}
+                      <div className="kanban__cardTitle" style={{ marginRight: 40 }}>
                         <strong title={g.name || ""}>{g.name || g.itemReference || "(sem nome)"}</strong>
                       </div>
 
-                      {/* Meta: referência + valor/unidade (pílula) */}
+                      {/* Meta */}
                       <div className="kanban__cardMeta">
                         <span className="muted" title={g.itemReference}>{g.itemReference || "—"}</span>
                         <span className="pill">{String(val)} {String(un)}</span>
                       </div>
 
-                      {/* Mensagem (se houver) */}
+                      {/* Mensagem */}
                       {g.message && <div className="kanban__cardBody muted">{g.message}</div>}
 
-                      {/* Ações */}
+                      {/* Ação / Status */}
                       <div className="kanban__cardActions">
-                        {/* {link ? (
-                          <a href={link} target="_blank" rel="noreferrer" className="btn btn--ghost" onMouseDown={(e) => e.stopPropagation()}>
-                            Abrir
-                          </a>
-                        ) : (
-                          <button className="btn btn--ghost" disabled onMouseDown={(e) => e.stopPropagation()}>
-                            Abrir
-                          </button>
-                        )} */}
                         <button
                           className={`btn ${statusBtnClass(status)}`}
                           title="Ver/editar tratativa"
@@ -854,8 +900,8 @@ export default function App() {
                         </button>
                       </div>
 
-                      {/* Data/ocorrência */}
-                      <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{msToDMY(g.latestInsertedMs)}</div>
+                      {/* Data da última ocorrência */}
+                      <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{msToDMYTime(g.latestInsertedMs)}</div>
                     </div>
                   );
                 })}
@@ -1005,7 +1051,7 @@ export default function App() {
                       <td className="td">{g.type ?? "—"}</td>
                       <td className="td td--center">{g.isAcknowledged ? "✔" : "—"}</td>
                       <td className="td td--center">{g.isDiscarded ? "✔" : "—"}</td>
-                      <td className="td td--nowrap">{msToDMY(g.latestInsertedMs)}</td>
+                      <td className="td td--nowrap">{msToDMYTime(g.latestInsertedMs)}</td>
                       <td className="td">
                         <button className={`btn ${statusBtnClass(status)}`} title="Ver/editar tratativa" onClick={() => openTratativaModal(g)}>{status}</button>
                       </td>
@@ -1058,7 +1104,7 @@ export default function App() {
                         const v = (it as any).triggerValue_value ?? (it as any).triggerValue?.value ?? "";
                         const u = (it as any).triggerValue_units ?? (it as any).triggerValue?.units ?? "";
                         const href = base ? toUiLink(base) : "";
-                        const occDisp = msToDMY(occurrenceMsWithOffset(it));
+                        const occDisp = msToDMYTime(occurrenceMsWithOffset(it));
                         return (
                           <tr key={`${idx}-${(it as any).id ?? "id"}`}>
                             <td className="td">{srv || "—"}</td>
@@ -1377,7 +1423,8 @@ export default function App() {
                   <tbody>
                     {tratativaModal.comments.map((c) => (
                       <tr key={c.id}>
-                        <td className="td td--nowrap">{msToDMY(isoToMs(c.created_at))}</td>
+                        {/* Comentários: dd/mm/yy hh:mm:ss */}
+                        <td className="td td--nowrap">{msToDMYTime(isoToMs(c.created_at))}</td>
                         <td className="td">{c.status ?? "—"}</td>
                         <td className="td">{c.text}</td>
                         <td className="td td--nowrap">

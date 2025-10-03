@@ -1,6 +1,7 @@
 import type { CatalogApi } from "../types";
 
-const MANAGER_URL = "http://10.2.1.133:5000";
+// const MANAGER_URL = import.meta.env.VITE_MANAGER_URL || "localhost";
+const MANAGER_URL = "http://10.2.1.133:5000"
 
 function unwrap<T = any>(data: any): T[] {
   if (!data) return [];
@@ -38,7 +39,6 @@ export async function createApi(payload: {
   if (!res.ok) throw new Error(`create ${res.status}: ${text || "sem corpo"}`);
   return text ? JSON.parse(text) : ({} as any);
 }
-
 
 export async function updateApi(
   id: string,
