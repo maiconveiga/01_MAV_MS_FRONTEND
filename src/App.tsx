@@ -352,9 +352,7 @@ export default function App() {
       }
     };
     for (let k = 0; k < Math.min(CONCURRENCY, pairs.length); k++) void runNext();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [groupedRowsRaw, apiListCommentsByReference]);
 
   useEffect(() => {
@@ -368,9 +366,7 @@ export default function App() {
       const hasNewAlarm = (g.latestInsertedMs || 0) > lastAt;
 
       if (normalized) {
-        if (currentAuto !== "concluído" && currentAuto !== "concluido") {
-          setAutoTratativa((p) => ({ ...p, [g.key]: "Concluído" }));
-        }
+        if (currentAuto !== "concluído" && currentAuto !== "concluido") setAutoTratativa((p) => ({ ...p, [g.key]: "Concluído" }));
         continue;
       }
 
@@ -379,21 +375,16 @@ export default function App() {
         ["concluído", "concluido", "em andamento", "oportunidade"].includes(currentAuto);
 
       if (hasNewAlarm && wasClosedOrWorking) {
-        if (currentAuto !== "não tratado") {
-          setAutoTratativa((p) => ({ ...p, [g.key]: "Não tratado" }));
-        }
+        if (currentAuto !== "não tratado") setAutoTratativa((p) => ({ ...p, [g.key]: "Não tratado" }));
       }
     }
   }, [groupedRowsRaw, lastStatusByRef, lastStatusAtByRef, autoTratativa]);
 
-  const statusShownForGroup = useCallback(
-    (g: GroupRow) => {
-      const ref = g.itemReference ?? "";
-      if (isNormalized(g)) return "Concluído";
-      return lastStatusByRef[ref] ?? autoTratativa[g.key] ?? "Não tratado";
-    },
-    [autoTratativa, lastStatusByRef]
-  );
+  const statusShownForGroup = useCallback((g: GroupRow) => {
+    const ref = g.itemReference ?? "";
+    if (isNormalized(g)) return "Concluído";
+    return lastStatusByRef[ref] ?? autoTratativa[g.key] ?? "Não tratado";
+  }, [autoTratativa, lastStatusByRef]);
 
   /* =========================
      Data Loading (parcial + erros)
@@ -439,12 +430,7 @@ export default function App() {
 
         let token: string | null = null;
         try {
-          token = await loginAndGetToken({
-            base_url: baseUrl,
-            usuario: a.Usuario,
-            senha: a.Senha,
-            verify_ssl: false,
-          });
+          token = await loginAndGetToken({ base_url: baseUrl, usuario: a.Usuario, senha: a.Senha, verify_ssl: false });
         } catch (e: any) {
           const msg = (e?.message ?? String(e)).toLowerCase();
           if (msg.includes("failed to fetch") || msg.includes("network") || msg.includes("connect") || msg.includes("timeout")) {
@@ -493,9 +479,7 @@ export default function App() {
     }
   }, [REFRESH_MS, addApiError, clearApiErrors]);
 
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  useEffect(() => { void reload(); }, [reload]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -514,26 +498,16 @@ export default function App() {
     const dir = sortDir === "asc" ? 1 : -1;
     const keyFn = (k: SortKey, it: GroupRow) => {
       switch (k) {
-        case "servidor":
-          return it.servidorName || "";
-        case "name":
-          return it.name || "";
-        case "itemReference":
-          return it.itemReference || "";
-        case "message":
-          return it.message || "";
-        case "value":
-          return num(it.value) ?? Number.NEGATIVE_INFINITY;
-        case "priority":
-          return num(it.priority) ?? Number.NEGATIVE_INFINITY;
-        case "type":
-          return it.type || "";
-        case "isAcknowledged":
-          return it.isAcknowledged ? 1 : 0;
-        case "isDiscarded":
-          return it.isDiscarded ? 1 : 0;
-        case "inserido":
-          return it.latestInsertedMs || 0;
+        case "servidor": return it.servidorName || "";
+        case "name": return it.name || "";
+        case "itemReference": return it.itemReference || "";
+        case "message": return it.message || "";
+        case "value": return num(it.value) ?? Number.NEGATIVE_INFINITY;
+        case "priority": return num(it.priority) ?? Number.NEGATIVE_INFINITY;
+        case "type": return it.type || "";
+        case "isAcknowledged": return it.isAcknowledged ? 1 : 0;
+        case "isDiscarded": return it.isDiscarded ? 1 : 0;
+        case "inserido": return it.latestInsertedMs || 0;
         case "tratativa": {
           const ref = it.itemReference ?? "";
           if (isNormalized(it)) return "Concluído";
@@ -542,13 +516,11 @@ export default function App() {
       }
     };
     return [...groupedRowsRaw].sort((a, b) => {
-      const ka = keyFn(sortKey, a) as any,
-        kb = keyFn(sortKey, b) as any;
+      const ka = keyFn(sortKey, a) as any, kb = keyFn(sortKey, b) as any;
       if (typeof ka === "number" && typeof kb === "number") return ka === kb ? 0 : ka < kb ? -dir : dir;
       const cmp = String(ka).localeCompare(String(kb));
       if (cmp !== 0) return cmp * dir;
-      const pA = num(a.priority) ?? -Infinity,
-        pB = num(b.priority) ?? -Infinity;
+      const pA = num(a.priority) ?? -Infinity, pB = num(b.priority) ?? -Infinity;
       if (pA !== pB) return pB - pA;
       return (b.latestInsertedMs ?? 0) - (a.latestInsertedMs ?? 0);
     });
@@ -559,34 +531,21 @@ export default function App() {
     return groupedSortedBase.filter((g) => fTratativas.includes(statusShownForGroup(g)));
   }, [groupedSortedBase, fTratativas, statusShownForGroup]);
 
-  const total = items.length,
-    totalShown = groupedSorted.length;
+  const total = items.length, totalShown = groupedSorted.length;
 
   const clearFilters = () => {
-    setFServidores([]);
-    setFTipos([]);
-    setFTratativas([]);
-    setFNome("");
-    setFItemRef("");
-    setFMensagem("");
-    setFValorTxt("");
-    setFPriorMin("");
-    setFPriorMax("");
-    setFAck("");
-    setFDesc("");
-    setFInsDe("");
-    setFInsAte("");
+    setFServidores([]); setFTipos([]); setFTratativas([]);
+    setFNome(""); setFItemRef(""); setFMensagem(""); setFValorTxt("");
+    setFPriorMin(""); setFPriorMax(""); setFAck(""); setFDesc("");
+    setFInsDe(""); setFInsAte("");
   };
 
-  const setSort = (k: SortKey, d: "asc" | "desc") => {
-    setSortKey(k);
-    setSortDir(d);
-  };
+  const setSort = (k: SortKey, d: "asc" | "desc") => { setSortKey(k); setSortDir(d); };
 
   const computeBellColor = (g: GroupRow): "red" | "gray" | "green" | "yellow" => {
     const L = g._latest as any;
     const type = String(L?.type ?? g.type ?? "").toLowerCase();
-    const val = String(L?.triggerValue_value ?? L?.triggerValue?.value ?? g.value ?? "").toLowerCase();
+       const val = String(L?.triggerValue_value ?? L?.triggerValue?.value ?? g.value ?? "").toLowerCase();
     if (type.includes("alarm") || type.includes("unreliable")) return "red";
     if (val.includes("offline")) return "gray";
     if (type.includes("normal") || val.includes("online")) return "green";
@@ -595,9 +554,7 @@ export default function App() {
 
   const Bell = ({ color }: { color: "red" | "gray" | "green" | "yellow" }) => (
     <span className={`bell bell--${color}`} aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="16" height="16">
-        <path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6V11a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Z" />
-      </svg>
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6V11a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Z"/></svg>
     </span>
   );
 
@@ -606,12 +563,8 @@ export default function App() {
       <span className="th__inner">
         <span>{label}</span>
         <span className="th__sort">
-          <button onClick={() => setSort(key, "asc")} className={`btn btn--ghost ${sortKey === key && sortDir === "asc" ? "btn--active" : ""}`}>
-            ▲
-          </button>
-          <button onClick={() => setSort(key, "desc")} className={`btn btn--ghost ${sortKey === key && sortDir === "desc" ? "btn--active" : ""}`}>
-            ▼
-          </button>
+          <button onClick={() => setSort(key, "asc")} className={`btn btn--ghost ${sortKey === key && sortDir === "asc" ? "btn--active" : ""}`}>▲</button>
+          <button onClick={() => setSort(key, "desc")} className={`btn btn--ghost ${sortKey === key && sortDir === "desc" ? "btn--active" : ""}`}>▼</button>
         </span>
       </span>
     </th>
@@ -631,110 +584,65 @@ export default function App() {
   const [tratSearch, setTratSearch] = useState("");
 
   const filteredServerOpts = useMemo(() => uniqServidores.filter((s) => s.toLowerCase().includes(serverSearch.toLowerCase())), [uniqServidores, serverSearch]);
-  const filteredTypeOpts = useMemo(() => uniqTipos.filter((s) => s.toLowerCase().includes(typeSearch.toLowerCase())), [uniqTipos, typeSearch]);
-  const filteredTratOpts = useMemo(() => lanes.filter((s) => s.toLowerCase().includes(tratSearch.toLowerCase())), [tratSearch]);
+  const filteredTypeOpts   = useMemo(() => uniqTipos.filter((s) => s.toLowerCase().includes(typeSearch.toLowerCase())), [uniqTipos, typeSearch]);
+  const filteredTratOpts   = useMemo(() => lanes.filter((s) => s.toLowerCase().includes(tratSearch.toLowerCase())), [tratSearch]);
 
-  const toggleTemp = (arr: string[], setArr: (v: string[]) => void, v: string) => setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+  const toggleTemp = (arr: string[], setArr: (v: string[]) => void, v: string) =>
+    setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   /* =========================
      CRUD APIs + Testar
      ========================= */
   const openApisModal = async () => {
-    setApisError(null);
-    setApisNotice(null);
-    setForm(emptyForm);
-    setEditingId(null);
-    try {
-      setApisBusy(true);
-      setCatalogLocal(await fetchCatalog());
-      setApisOpen(true);
-    } catch (e: any) {
-      setApisError(e?.message ?? String(e));
-    } finally {
-      setApisBusy(false);
-    }
+    setApisError(null); setApisNotice(null); setForm(emptyForm); setEditingId(null);
+    try { setApisBusy(true); setCatalogLocal(await fetchCatalog()); setApisOpen(true); }
+    catch (e: any) { setApisError(e?.message ?? String(e)); }
+    finally { setApisBusy(false); }
   };
-  const startCreate = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-  };
+  const startCreate = () => { setEditingId(null); setForm(emptyForm); };
   const startEdit = (api: CatalogApi) => {
     const editing = getApiId(api);
     setEditingId(editing);
     setForm({
-      Servidor: api.Servidor ?? "",
-      IP: api.IP ?? "",
-      Usuario: api.Usuario ?? "",
-      offset: Number(api.offset ?? 0),
-      Versao: String(api.Versao ?? "V3"),
-      QuantidadeAlarmes: Number(api.QuantidadeAlarmes ?? 1),
-      Senha: api.Senha ?? "",
+      Servidor: api.Servidor ?? "", IP: api.IP ?? "", Usuario: api.Usuario ?? "",
+      offset: Number(api.offset ?? 0), Versao: String(api.Versao ?? "V3"),
+      QuantidadeAlarmes: Number(api.QuantidadeAlarmes ?? 1), Senha: api.Senha ?? "",
     });
   };
   const saveApi = async () => {
     try {
-      setApisBusy(true);
-      setApisError(null);
-      setApisNotice(null);
+      setApisBusy(true); setApisError(null); setApisNotice(null);
       const payload = {
-        Servidor: form.Servidor.trim(),
-        IP: form.IP.trim(),
-        Usuario: form.Usuario.trim(),
+        Servidor: form.Servidor.trim(), IP: form.IP.trim(), Usuario: form.Usuario.trim(),
         offset: Math.max(-12, Math.min(12, Number(form.offset ?? 0))),
         Versao: (form.Versao || "V3").toUpperCase(),
         QuantidadeAlarmes: Math.max(1, Number(form.QuantidadeAlarmes ?? 1)),
         Senha: form.Senha ?? "",
       };
-      if (editingId) await updateApi(editingId, payload);
-      else await createApi(payload);
-      const list = await fetchCatalog();
-      setCatalogLocal(list);
-      startCreate();
-      setApisNotice("Registro salvo.");
-      setTimeout(() => setApisNotice(null), 2500);
+      if (editingId) await updateApi(editingId, payload); else await createApi(payload);
+      const list = await fetchCatalog(); setCatalogLocal(list); startCreate();
+      setApisNotice("Registro salvo."); setTimeout(() => setApisNotice(null), 2500);
       await reload();
-    } catch (e: any) {
-      setApisError(e?.message ?? String(e));
-    } finally {
-      setApisBusy(false);
-    }
+    } catch (e: any) { setApisError(e?.message ?? String(e)); }
+    finally { setApisBusy(false); }
   };
   const removeApi = async (id: string | null) => {
-    if (!id) return;
-    if (!confirm("Excluir esta API do catálogo?")) return;
-    try {
-      setApisBusy(true);
-      setApisError(null);
-      setApisNotice(null);
-      await deleteApi(id);
-      setCatalogLocal(await fetchCatalog());
-      setApisNotice("API removida.");
-      setTimeout(() => setApisNotice(null), 2500);
-      await reload();
-    } catch (e: any) {
-      setApisError(e?.message ?? String(e));
-    } finally {
-      setApisBusy(false);
-    }
+    if (!id) return; if (!confirm("Excluir esta API do catálogo?")) return;
+    try { setApisBusy(true); setApisError(null); setApisNotice(null);
+      await deleteApi(id); setCatalogLocal(await fetchCatalog());
+      setApisNotice("API removida."); setTimeout(() => setApisNotice(null), 2500); await reload();
+    } catch (e: any) { setApisError(e?.message ?? String(e)); }
+    finally { setApisBusy(false); }
   };
   const testApi = async (api: CatalogApi) => {
     const id = getApiId(api) || `${api.Servidor}-${api.IP}-${api.Versao}`;
-    setTestBusyById((p) => ({ ...p, [id]: true }));
-    setApisError(null);
-    setApisNotice(null);
+    setTestBusyById((p) => ({ ...p, [id]: true })); setApisError(null); setApisNotice(null);
     try {
       const token = await loginAndGetToken({ base_url: api.BaseUrl, usuario: api.Usuario, senha: api.Senha, verify_ssl: false });
-      if (token) {
-        setApisNotice(`API online (${api.BaseUrl})`);
-        setTimeout(() => setApisNotice(null), 2500);
-      } else {
-        setApisError(`Sem token ao testar ${api.BaseUrl}.`);
-      }
-    } catch (e: any) {
-      setApisError(`Falha no teste de ${api.BaseUrl}: ${e?.message ?? String(e)}`);
-    } finally {
-      setTestBusyById((p) => ({ ...p, [id]: false }));
-    }
+      if (token) { setApisNotice(`API online (${api.BaseUrl})`); setTimeout(() => setApisNotice(null), 2500); }
+      else setApisError(`Sem token ao testar ${api.BaseUrl}.`);
+    } catch (e: any) { setApisError(`Falha no teste de ${api.BaseUrl}: ${e?.message ?? String(e)}`); }
+    finally { setTestBusyById((p) => ({ ...p, [id]: false })); }
   };
 
   /* =========================
@@ -752,13 +660,12 @@ export default function App() {
   }>({ open: false, group: null, comments: [], busy: false, error: null, text: "", status: "Não tratado", editingId: null });
 
   const openTratativaModal = async (g: GroupRow) => {
-    const reference = g.itemReference;
-    if (!reference) return;
+    const reference = g.itemReference; if (!reference) return;
     setTratativaModal((s) => ({ ...s, open: true, group: g, busy: true, error: null, comments: [], text: "", editingId: null, status: "Não tratado" }));
     try {
       const comments = await apiListCommentsByReference(g, reference);
       if (comments[0]?.status) setLastStatusByRef((p) => ({ ...p, [reference]: String(comments[0].status) }));
-      if (comments[0]?.text) setLastTextByRef((p) => ({ ...p, [reference]: String(comments[0].text) }));
+      if (comments[0]?.text)   setLastTextByRef((p) => ({ ...p, [reference]: String(comments[0].text) }));
       if (comments[0]?.created_at) setLastStatusAtByRef((p) => ({ ...p, [reference]: isoToMs(comments[0].created_at) || 0 }));
       setTratativaModal((s) => ({
         ...s,
@@ -769,7 +676,7 @@ export default function App() {
         error: null,
         text: "",
         status: isNormalized(g) ? "Concluído" : comments[0]?.status ?? autoTratativa[g.key] ?? "Não tratado",
-        editingId: null,
+        editingId: null
       }));
     } catch (e: any) {
       setTratativaModal((s) => ({ ...s, busy: false, error: e?.message ?? String(e) }));
@@ -777,25 +684,18 @@ export default function App() {
   };
 
   const onSaveTratativa = async () => {
-    const m = tratativaModal;
-    if (!m.group) return;
+    const m = tratativaModal; if (!m.group) return;
     const reference = m.group.itemReference;
-    if (!reference) {
-      setTratativaModal((s) => ({ ...s, error: "Este grupo não possui itemReference para usar como reference." }));
-      return;
-    }
+    if (!reference) { setTratativaModal((s) => ({ ...s, error: "Este grupo não possui itemReference para usar como reference." })); return; }
     try {
       setTratativaModal((s) => ({ ...s, busy: true, error: null }));
       if (m.editingId) {
         const up = await apiUpdateComment(m.group, m.editingId, { text: m.text, status: m.status });
-        setLastTextByRef((p) => ({ ...p, [reference]: up.text }));
-        if (up.status) setLastStatusByRef((p) => ({ ...p, [reference]: String(up.status) }));
+        setLastTextByRef((p) => ({ ...p, [reference]: up.text })); if (up.status) setLastStatusByRef((p) => ({ ...p, [reference]: String(up.status) }));
       } else {
         const created = await apiCreateComment(m.group, { reference, text: m.text || "(sem texto)", status: m.status });
-        setLastTextByRef((p) => ({ ...p, [reference]: created.text }));
-        if (created.status) setLastStatusByRef((p) => ({ ...p, [reference]: String(created.status) }));
+        setLastTextByRef((p) => ({ ...p, [reference]: created.text })); if (created.status) setLastStatusByRef((p) => ({ ...p, [reference]: String(created.status) }));
       }
-
       const comments = await apiListCommentsByReference(m.group, reference);
       setTratativaModal((s) => ({ ...s, comments, text: "", editingId: null, busy: false, status: comments[0]?.status ?? m.status }));
       if (comments[0]?.status) setLastStatusByRef((p) => ({ ...p, [reference]: String(comments[0].status) }));
@@ -808,8 +708,7 @@ export default function App() {
 
   const onEditComment = (c: Comment) => setTratativaModal((s) => ({ ...s, editingId: c.id, text: c.text, status: c.status ?? "Não tratado" }));
   const onDeleteComment = async (c: Comment) => {
-    const m = tratativaModal;
-    if (!m.group) return;
+    const m = tratativaModal; if (!m.group) return;
     if (!confirm("Excluir este comentário?")) return;
     try {
       setTratativaModal((s) => ({ ...s, busy: true, error: null }));
@@ -867,13 +766,10 @@ export default function App() {
     setAutoTratativa((p) => ({ ...p, [g.key]: lane }));
     setLastStatusByRef((p) => ({ ...p, [ref]: lane }));
     setLastStatusAtByRef((p) => ({ ...p, [ref]: Date.now() }));
-    try {
-      await apiCreateComment(g, { reference: ref, text: "(ajustado via Kanban)", status: lane });
-    } catch {
-      // mantém UI, opcionalmente poderia reverter e exibir aviso
-    }
+    try { await apiCreateComment(g, { reference: ref, text: "(ajustado via Kanban)", status: lane }); } catch {}
   };
 
+  // === NOVO LAYOUT DO CARD (como antes) + contador no topo direito e clicável ===
   const renderKanban = () => {
     const byLane: Record<Lane, GroupRow[]> = { "Não tratado": [], "Em andamento": [], "Concluído": [], "Oportunidade": [] };
     for (const g of groupedSorted) byLane[statusShownForGroup(g) as Lane]?.push(g);
@@ -882,14 +778,7 @@ export default function App() {
       <div className="tableWrap" ref={kanbanWrapRef} onDragOver={onKanbanDragOver}>
         <div className="kanban">
           {lanes.map((ln) => (
-            <div
-              key={ln}
-              className="kanban__col"
-              onDragOver={(e) => {
-                e.preventDefault();
-              }}
-              onDrop={() => onDropLane(ln)}
-            >
+            <div key={ln} className="kanban__col" onDragOver={(e) => e.preventDefault()} onDrop={() => onDropLane(ln)}>
               <div className="kanban__colHeader">
                 <strong>{ln}</strong>
                 <span className="badge">{byLane[ln].length}</span>
@@ -900,6 +789,8 @@ export default function App() {
                   const val = g.value ?? "";
                   const un = g.units ?? "";
                   const link = g.servidorHref;
+                  const status = statusShownForGroup(g);
+
                   return (
                     <div
                       key={g.key}
@@ -907,36 +798,63 @@ export default function App() {
                       draggable
                       onDragStart={() => setDragKey(g.key)}
                       onDragEnd={() => setDragKey(null)}
+                      style={{ position: "relative" }}
                     >
+                      {/* Contador no canto superior direito, clicável */}
+                      <button
+                        className="badge badge--count"
+                        style={{ position: "absolute", top: 8, right: 8, cursor: "pointer" }}
+                        title={`Ver ${g.items.length} ocorrências`}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); setModalGroup(g); }}
+                      >
+                        x{g.items.length}
+                      </button>
+
+                      {/* Cabeçalho: sino + servidor (como antes) */}
                       <div className="kanban__cardHead">
                         <Bell color={bell} />
                         <span className="muted">{g.servidorName || "—"}</span>
                       </div>
-                      <div className="kanban__cardTitle">
+
+                      {/* Título principal (nome / referência) */}
+                      <div className="kanban__cardTitle" style={{ marginRight: 40 /* espaço para o badge */ }}>
                         <strong title={g.name || ""}>{g.name || g.itemReference || "(sem nome)"}</strong>
-                        <span className="badge badge--count">x{g.items.length}</span>
                       </div>
+
+                      {/* Meta: referência + valor/unidade (pílula) */}
                       <div className="kanban__cardMeta">
-                        <span className="muted" title={g.itemReference}>
-                          {g.itemReference || "—"}
-                        </span>
+                        <span className="muted" title={g.itemReference}>{g.itemReference || "—"}</span>
                         <span className="pill">{String(val)} {String(un)}</span>
                       </div>
+
+                      {/* Mensagem (se houver) */}
                       {g.message && <div className="kanban__cardBody muted">{g.message}</div>}
+
+                      {/* Ações */}
                       <div className="kanban__cardActions">
-                        {link ? (
-                          <a href={link} target="_blank" rel="noreferrer" className="btn btn--ghost">
+                        {/* {link ? (
+                          <a href={link} target="_blank" rel="noreferrer" className="btn btn--ghost" onMouseDown={(e) => e.stopPropagation()}>
                             Abrir
                           </a>
                         ) : (
-                          <button className="btn btn--ghost" disabled>
+                          <button className="btn btn--ghost" disabled onMouseDown={(e) => e.stopPropagation()}>
                             Abrir
                           </button>
-                        )}
-                        <button className={`btn ${statusBtnClass(statusShownForGroup(g))}`} onClick={() => openTratativaModal(g)}>
-                          {statusShownForGroup(g)}
+                        )} */}
+                        <button
+                          className={`btn ${statusBtnClass(status)}`}
+                          title="Ver/editar tratativa"
+                          onMouseDown={(e) => { e.stopPropagation(); }}
+                          onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          draggable={false}
+                          onClick={() => openTratativaModal(g)}
+                        >
+                          {status}
                         </button>
                       </div>
+
+                      {/* Data/ocorrência */}
                       <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{msToDMY(g.latestInsertedMs)}</div>
                     </div>
                   );
@@ -953,10 +871,7 @@ export default function App() {
   /* =========================
      Render
      ========================= */
-  const manualReload = () => {
-    setNextTs(Date.now() + REFRESH_MS);
-    void reload();
-  };
+  const manualReload = () => { setNextTs(Date.now() + REFRESH_MS); void reload(); };
 
   return (
     <div className="page">
@@ -967,24 +882,13 @@ export default function App() {
           <button onClick={manualReload} disabled={loading} className="btn btn--primary" title={`Recarregar agora • próximo automático em ${fmtMMSS(leftSec)}`}>
             🔄 Recarregar ({fmtMMSS(leftSec)})
           </button>
-
-          {/* Botão ÚNICO de alternância */}
           <button className="btn" onClick={() => setView((v) => (v === "table" ? "kanban" : "table"))} title="Alternar entre Tabela e Kanban">
             {view === "table" ? "Kanban" : "Tabela"}
           </button>
-
-          <button onClick={openApisModal} className="btn btn--secondary" title="Gerenciar APIs">
-            🧰 API's
-          </button>
-          <button onClick={clearFilters} className="btn" title="Limpar filtros">
-            🧹 Limpar filtros
-          </button>
-
-          {/* Botões de erro */}
+          <button onClick={openApisModal} className="btn btn--secondary" title="Gerenciar APIs">🧰 API's</button>
+          <button onClick={clearFilters} className="btn" title="Limpar filtros">🧹 Limpar filtros</button>
           {apiErrors.length === 0 ? (
-            <button className="btn" disabled title="Sem erros detectados">
-              ✅ Online
-            </button>
+            <button className="btn" disabled title="Sem erros detectados">✅ Online</button>
           ) : (
             apiErrors.map((e) => (
               <button key={e.id} className="btn btn--danger" onClick={() => setErrorModal({ open: true, entry: e })} title="Clique para ver detalhes do erro">
@@ -1024,35 +928,16 @@ export default function App() {
                 </tr>
                 <tr className="thead-filters">
                   <th className="th">
-                    <button
-                      type="button"
-                      className="input"
-                      onClick={() => {
-                        setTempServidores([...fServidores]);
-                        setServerSearch("");
-                        setServerModalOpen(true);
-                      }}
-                      title="Clique para filtrar por Servidor"
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
-                    >
-                      <span style={{ fontWeight: 600 }} className="muted">
-                        Servidor:
-                      </span>
+                    <button type="button" className="input" onClick={() => { setTempServidores([...fServidores]); setServerSearch(""); setServerModalOpen(true); }}
+                      title="Clique para filtrar por Servidor" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                      <span style={{ fontWeight: 600 }} className="muted">Servidor:</span>
                       <span>{summarize(fServidores, uniqServidores.length)}</span>
                     </button>
                   </th>
-                  <th className="th">
-                    <input value={fNome} onChange={(e) => setFNome(e.target.value)} placeholder="contém…" className="input" />
-                  </th>
-                  <th className="th">
-                    <input value={fItemRef} onChange={(e) => setFItemRef(e.target.value)} placeholder="contém…" className="input" />
-                  </th>
-                  <th className="th">
-                    <input value={fMensagem} onChange={(e) => setFMensagem(e.target.value)} placeholder="contém…" className="input" />
-                  </th>
-                  <th className="th">
-                    <input value={fValorTxt} onChange={(e) => setFValorTxt(e.target.value)} placeholder="ex.: 22.5 °C" className="input" />
-                  </th>
+                  <th className="th"><input value={fNome} onChange={(e) => setFNome(e.target.value)} placeholder="contém…" className="input" /></th>
+                  <th className="th"><input value={fItemRef} onChange={(e) => setFItemRef(e.target.value)} placeholder="contém…" className="input" /></th>
+                  <th className="th"><input value={fMensagem} onChange={(e) => setFMensagem(e.target.value)} placeholder="contém…" className="input" /></th>
+                  <th className="th"><input value={fValorTxt} onChange={(e) => setFValorTxt(e.target.value)} placeholder="ex.: 22.5 °C" className="input" /></th>
                   <th className="th">
                     <div className="grid2">
                       <input value={fPriorMin} onChange={(e) => setFPriorMin(e.target.value)} placeholder="min" className="input" inputMode="numeric" />
@@ -1060,35 +945,20 @@ export default function App() {
                     </div>
                   </th>
                   <th className="th">
-                    <button
-                      type="button"
-                      className="input"
-                      onClick={() => {
-                        setTempTipos([...fTipos]);
-                        setTypeSearch("");
-                        setTypeModalOpen(true);
-                      }}
-                      title="Clique para filtrar por Tipo"
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
-                    >
-                      <span style={{ fontWeight: 600 }} className="muted">
-                        Tipo:
-                      </span>
+                    <button type="button" className="input" onClick={() => { setTempTipos([...fTipos]); setTypeSearch(""); setTypeModalOpen(true); }}
+                      title="Clique para filtrar por Tipo" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                      <span style={{ fontWeight: 600 }} className="muted">Tipo:</span>
                       <span>{summarize(fTipos, uniqTipos.length)}</span>
                     </button>
                   </th>
                   <th className="th">
                     <select value={fAck} onChange={(e) => setFAck(e.target.value)} className="input select">
-                      <option value="">(Todos)</option>
-                      <option value="sim">Sim</option>
-                      <option value="nao">Não</option>
+                      <option value="">(Todos)</option><option value="sim">Sim</option><option value="nao">Não</option>
                     </select>
                   </th>
                   <th className="th">
                     <select value={fDesc} onChange={(e) => setFDesc(e.target.value)} className="input select">
-                      <option value="">(Todos)</option>
-                      <option value="sim">Sim</option>
-                      <option value="nao">Não</option>
+                      <option value="">(Todos)</option><option value="sim">Sim</option><option value="nao">Não</option>
                     </select>
                   </th>
                   <th className="th">
@@ -1098,20 +968,9 @@ export default function App() {
                     </div>
                   </th>
                   <th className="th">
-                    <button
-                      type="button"
-                      className="input"
-                      onClick={() => {
-                        setTempTrat([...fTratativas]);
-                        setTratSearch("");
-                        setTratModalOpen(true);
-                      }}
-                      title="Clique para filtrar por Tratativa"
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
-                    >
-                      <span style={{ fontWeight: 600 }} className="muted">
-                        Tratativa:
-                      </span>
+                    <button type="button" className="input" onClick={() => { setTempTrat([...fTratativas]); setTratSearch(""); setTratModalOpen(true); }}
+                      title="Clique para filtrar por Tratativa" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                      <span style={{ fontWeight: 600 }} className="muted">Tratativa:</span>
                       <span>{summarize(fTratativas, lanes.length)}</span>
                     </button>
                   </th>
@@ -1128,60 +987,38 @@ export default function App() {
                   return (
                     <tr key={g.key}>
                       <td className="td td--servidor">
-                        <span title="status">
-                          <Bell color={bell} />
-                        </span>
+                        <span title="status"><Bell color={bell} /></span>
                         {link ? (
                           <a href={link} target="_blank" rel="noreferrer" className="link" title={g.servidorName}>
                             {g.servidorName || "—"}
                           </a>
-                        ) : (
-                          g.servidorName || "—"
-                        )}
+                        ) : (g.servidorName || "—")}
                       </td>
                       <td className="td">
                         <strong title={g.name || ""}>{g.name || g.itemReference || "(sem nome)"}</strong>{" "}
-                        {g.items.length > 1 && (
-                          <span className="badge" title={`Este grupo possui ${g.items.length} ocorrências`}>x{g.items.length}</span>
-                        )}
+                        {g.items.length > 1 && <span className="badge" title={`Este grupo possui ${g.items.length} ocorrências`}>x{g.items.length}</span>}
                       </td>
-                      <td className="td" title={g.itemReference}>
-                        {g.itemReference || "—"}
-                      </td>
-                      <td className="td" title={g.message}>
-                        {g.message ?? ""}
-                      </td>
-                      <td className="td">
-                        {String(val)} {String(un)}
-                      </td>
+                      <td className="td" title={g.itemReference}>{g.itemReference || "—"}</td>
+                      <td className="td" title={g.message}>{g.message ?? ""}</td>
+                      <td className="td">{String(val)} {String(un)}</td>
                       <td className="td td--center">{g.priority ?? "—"}</td>
                       <td className="td">{g.type ?? "—"}</td>
                       <td className="td td--center">{g.isAcknowledged ? "✔" : "—"}</td>
                       <td className="td td--center">{g.isDiscarded ? "✔" : "—"}</td>
                       <td className="td td--nowrap">{msToDMY(g.latestInsertedMs)}</td>
                       <td className="td">
-                        <button className={`btn ${statusBtnClass(status)}`} title="Ver/editar tratativa" onClick={() => openTratativaModal(g)}>
-                          {status}
-                        </button>
+                        <button className={`btn ${statusBtnClass(status)}`} title="Ver/editar tratativa" onClick={() => openTratativaModal(g)}>{status}</button>
                       </td>
                     </tr>
                   );
                 })}
                 {!loading && groupedSorted.length === 0 && (
-                  <tr>
-                    <td className="td td--center" colSpan={11}>
-                      Nenhum item encontrado com os filtros atuais.
-                    </td>
-                  </tr>
+                  <tr><td className="td td--center" colSpan={11}>Nenhum item encontrado com os filtros atuais.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-          {error && (
-            <div className="error" style={{ marginTop: 12 }}>
-              Erro: {error}
-            </div>
-          )}
+          {error && <div className="error" style={{ marginTop: 12 }}>Erro: {error}</div>}
         </div>
       )}
 
@@ -1192,64 +1029,24 @@ export default function App() {
             <div className="modal__header">
               <div className="modal__title">
                 <strong>{modalGroup.name || "(sem nome)"}</strong>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  {modalGroup.itemReference}
-                </div>
+                <div className="muted" style={{ marginTop: 4 }}>{modalGroup.itemReference}</div>
               </div>
-              <button className="modal__close" onClick={() => setModalGroup(null)} aria-label="Fechar">
-                ✕
-              </button>
+              <button className="modal__close" onClick={() => setModalGroup(null)} aria-label="Fechar">✕</button>
             </div>
             <div className="modal__body">
               <div className="tableCard">
                 <table className="table">
                   <thead>
                     <tr className="thead-title">
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Servidor</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Mensagem</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Valor</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Prioridade</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Tipo</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Reconhecido</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Descartado</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Ocorrência</span>
-                        </span>
-                      </th>
-                      <th className="th">
-                        <span className="th__inner">
-                          <span>Abrir</span>
-                        </span>
-                      </th>
+                      <th className="th"><span className="th__inner"><span>Servidor</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Mensagem</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Valor</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Prioridade</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Tipo</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Reconhecido</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Descartado</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Ocorrência</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Abrir</span></span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1284,27 +1081,18 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal: Filtro de Servidor */}
+      {/* Modais de filtro */}
       {serverModalOpen && (
         <div className="modal" role="dialog" aria-modal="true" onClick={() => setServerModalOpen(false)}>
           <div className="modal__card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <div className="modal__title">
-                <strong>Filtrar por Servidor</strong>
-              </div>
-              <button className="modal__close" onClick={() => setServerModalOpen(false)} aria-label="Fechar">
-                ✕
-              </button>
+            <div className="modal__header"><div className="modal__title"><strong>Filtrar por Servidor</strong></div>
+              <button className="modal__close" onClick={() => setServerModalOpen(false)} aria-label="Fechar">✕</button>
             </div>
             <div className="modal__body">
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                 <input className="input" placeholder="Buscar servidor..." value={serverSearch} onChange={(e) => setServerSearch(e.target.value)} />
-                <button className="btn btn--ghost" onClick={() => setTempServidores([...uniqServidores])}>
-                  Selecionar todos
-                </button>
-                <button className="btn btn--ghost" onClick={() => setTempServidores([])}>
-                  Limpar
-                </button>
+                <button className="btn btn--ghost" onClick={() => setTempServidores([...uniqServidores])}>Selecionar todos</button>
+                <button className="btn btn--ghost" onClick={() => setTempServidores([])}>Limpar</button>
               </div>
               <div className="tableCard" style={{ padding: 8 }}>
                 <div style={{ maxHeight: 320, overflow: "auto", display: "grid", gap: 6 }}>
@@ -1318,39 +1106,25 @@ export default function App() {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-                <button className="btn" onClick={() => setServerModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button className="btn btn--primary" onClick={() => { setFServidores(tempServidores); setServerModalOpen(false); }}>
-                  Aplicar
-                </button>
+                <button className="btn" onClick={() => setServerModalOpen(false)}>Cancelar</button>
+                <button className="btn btn--primary" onClick={() => { setFServidores(tempServidores); setServerModalOpen(false); }}>Aplicar</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Filtro de Tipo */}
       {typeModalOpen && (
         <div className="modal" role="dialog" aria-modal="true" onClick={() => setTypeModalOpen(false)}>
           <div className="modal__card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <div className="modal__title">
-                <strong>Filtrar por Tipo</strong>
-              </div>
-              <button className="modal__close" onClick={() => setTypeModalOpen(false)} aria-label="Fechar">
-                ✕
-              </button>
+            <div className="modal__header"><div className="modal__title"><strong>Filtrar por Tipo</strong></div>
+              <button className="modal__close" onClick={() => setTypeModalOpen(false)} aria-label="Fechar">✕</button>
             </div>
             <div className="modal__body">
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                 <input className="input" placeholder="Buscar tipo..." value={typeSearch} onChange={(e) => setTypeSearch(e.target.value)} />
-                <button className="btn btn--ghost" onClick={() => setTempTipos([...fTipos.length ? fTipos : uniqTipos])}>
-                  Selecionar todos
-                </button>
-                <button className="btn btn--ghost" onClick={() => setTempTipos([])}>
-                  Limpar
-                </button>
+                <button className="btn btn--ghost" onClick={() => setTempTipos([...fTipos.length ? fTipos : uniqTipos])}>Selecionar todos</button>
+                <button className="btn btn--ghost" onClick={() => setTempTipos([])}>Limpar</button>
               </div>
               <div className="tableCard" style={{ padding: 8 }}>
                 <div style={{ maxHeight: 320, overflow: "auto", display: "grid", gap: 6 }}>
@@ -1364,39 +1138,25 @@ export default function App() {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-                <button className="btn" onClick={() => setTypeModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button className="btn btn--primary" onClick={() => { setFTipos(tempTipos); setTypeModalOpen(false); }}>
-                  Aplicar
-                </button>
+                <button className="btn" onClick={() => setTypeModalOpen(false)}>Cancelar</button>
+                <button className="btn btn--primary" onClick={() => { setFTipos(tempTipos); setTypeModalOpen(false); }}>Aplicar</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Filtro de Tratativa */}
       {tratModalOpen && (
         <div className="modal" role="dialog" aria-modal="true" onClick={() => setTratModalOpen(false)}>
           <div className="modal__card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <div className="modal__title">
-                <strong>Filtrar por Tratativa</strong>
-              </div>
-              <button className="modal__close" onClick={() => setTratModalOpen(false)} aria-label="Fechar">
-                ✕
-              </button>
+            <div className="modal__header"><div className="modal__title"><strong>Filtrar por Tratativa</strong></div>
+              <button className="modal__close" onClick={() => setTratModalOpen(false)} aria-label="Fechar">✕</button>
             </div>
             <div className="modal__body">
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                 <input className="input" placeholder="Buscar status..." value={tratSearch} onChange={(e) => setTratSearch(e.target.value)} />
-                <button className="btn btn--ghost" onClick={() => setTempTrat([...lanes])}>
-                  Selecionar todos
-                </button>
-                <button className="btn btn--ghost" onClick={() => setTempTrat([])}>
-                  Limpar
-                </button>
+                <button className="btn btn--ghost" onClick={() => setTempTrat([...lanes])}>Selecionar todos</button>
+                <button className="btn btn--ghost" onClick={() => setTempTrat([])}>Limpar</button>
               </div>
               <div className="tableCard" style={{ padding: 8 }}>
                 <div style={{ maxHeight: 320, overflow: "auto", display: "grid", gap: 6 }}>
@@ -1410,12 +1170,8 @@ export default function App() {
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-                <button className="btn" onClick={() => setTratModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button className="btn btn--primary" onClick={() => { setFTratativas(tempTrat); setTratModalOpen(false); }}>
-                  Aplicar
-                </button>
+                <button className="btn" onClick={() => setTratModalOpen(false)}>Cancelar</button>
+                <button className="btn btn--primary" onClick={() => { setFTratativas(tempTrat); setTratModalOpen(false); }}>Aplicar</button>
               </div>
             </div>
           </div>
@@ -1431,24 +1187,17 @@ export default function App() {
                 <strong>Catálogo de APIs</strong>
                 <span className="muted" style={{ fontSize: 12 }}>Listar · Cadastrar · Editar · Excluir · Testar</span>
               </div>
-              <button className="modal__close" onClick={() => setApisOpen(false)} aria-label="Fechar">
-                ✕
-              </button>
+              <button className="modal__close" onClick={() => setApisOpen(false)} aria-label="Fechar">✕</button>
             </div>
             <div className="modal__body">
               {apisError && <div className="error" style={{ marginBottom: 8 }}>{apisError}</div>}
               {apisNotice && <div className="notice" style={{ marginBottom: 8 }}>{apisNotice}</div>}
 
-              {/* Form */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 12 }}>
                 <input className="input" placeholder="Servidor" value={form.Servidor} onChange={(e) => setForm((f) => ({ ...f, Servidor: e.target.value }))} />
                 <input className="input" placeholder="IP (ex.: 10.2.1.133)" value={form.IP} onChange={(e) => setForm((f) => ({ ...f, IP: e.target.value }))} inputMode="numeric" />
                 <select className="input select" value={form.Versao} onChange={(e) => setForm((f) => ({ ...f, Versao: e.target.value }))}>
-                  {["V1", "V2", "V3", "V4", "V5", "V6"].map((v) => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
-                  ))}
+                  {["V1", "V2", "V3", "V4", "V5", "V6"].map((v) => <option key={v} value={v}>{v}</option>)}
                 </select>
                 <input className="input" placeholder="Qtd Alarmes" inputMode="numeric" value={String(form.QuantidadeAlarmes)} onChange={(e) => setForm((f) => ({ ...f, QuantidadeAlarmes: Number(e.target.value || 1) }))} />
                 <input className="input" placeholder="Usuário" value={form.Usuario} onChange={(e) => setForm((f) => ({ ...f, Usuario: e.target.value }))} />
@@ -1456,11 +1205,7 @@ export default function App() {
                 <div style={{ gridColumn: "span 6 / auto" }}>
                   <label className="muted" style={{ display: "block", marginBottom: 4 }}>Offset (h)</label>
                   <select className="input select" value={String(form.offset)} onChange={(e) => setForm((f) => ({ ...f, offset: Number(e.target.value) }))}>
-                    {Array.from({ length: 25 }, (_, i) => i - 12).map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
+                    {Array.from({ length: 25 }, (_, i) => i - 12).map((v) => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
               </div>
@@ -1468,21 +1213,14 @@ export default function App() {
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 {editingId ? (
                   <>
-                    <button className="btn btn--primary" disabled={apisBusy} onClick={saveApi}>
-                      💾 Salvar
-                    </button>
-                    <button className="btn" disabled={apisBusy} onClick={startCreate}>
-                      ➕ Novo
-                    </button>
+                    <button className="btn btn--primary" disabled={apisBusy} onClick={saveApi}>💾 Salvar</button>
+                    <button className="btn" disabled={apisBusy} onClick={startCreate}>➕ Novo</button>
                   </>
                 ) : (
-                  <button className="btn btn--primary" disabled={apisBusy} onClick={saveApi}>
-                    ➕ Cadastrar
-                  </button>
+                  <button className="btn btn--primary" disabled={apisBusy} onClick={saveApi}>➕ Cadastrar</button>
                 )}
               </div>
 
-              {/* Lista */}
               <div className="tableCard">
                 <table className="table">
                   <thead>
@@ -1524,11 +1262,7 @@ export default function App() {
                       );
                     })}
                     {catalogLocal.length === 0 && (
-                      <tr>
-                        <td className="td td--center" colSpan={10}>
-                          Nenhuma API cadastrada.
-                        </td>
-                      </tr>
+                      <tr><td className="td td--center" colSpan={10}>Nenhuma API cadastrada.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1543,9 +1277,7 @@ export default function App() {
         <div className="modal" role="dialog" aria-modal="true" onClick={() => setErrorModal({ open: false, entry: null })}>
           <div className="modal__card" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <div className="modal__title">
-                <strong>{errorModal.entry.title}</strong>
-              </div>
+              <div className="modal__title"><strong>{errorModal.entry.title}</strong></div>
               <button className="modal__close" onClick={() => setErrorModal({ open: false, entry: null })} aria-label="Fechar">✕</button>
             </div>
             <div className="modal__body">
@@ -1554,6 +1286,125 @@ export default function App() {
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, gap: 8 }}>
                 <button className="btn" onClick={() => setErrorModal({ open: false, entry: null })}>Fechar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Tratativa (comentários) */}
+      {tratativaModal.open && tratativaModal.group && (
+        <div
+          className="modal"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setTratativaModal((s) => ({ ...s, open: false }))}
+        >
+          <div className="modal__card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <div className="modal__title">
+                <strong>Tratativa</strong>
+                <div className="muted" style={{ marginTop: 4 }}>
+                  {tratativaModal.group.name || "(sem nome)"} · {tratativaModal.group.itemReference || "—"}
+                </div>
+              </div>
+              <button
+                className="modal__close"
+                onClick={() => setTratativaModal((s) => ({ ...s, open: false }))}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal__body" style={{ display: "grid", gap: 12 }}>
+              {tratativaModal.error && <div className="error">{tratativaModal.error}</div>}
+
+              {/* Formulário de edição/criação */}
+              <div className="tableCard" style={{ padding: 12, display: "grid", gap: 8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 8 }}>
+                  <label className="muted" style={{ alignSelf: "center" }}>Status</label>
+                  <select
+                    className="input select"
+                    value={tratativaModal.status}
+                    onChange={(e) => setTratativaModal((s) => ({ ...s, status: e.target.value }))}
+                  >
+                    {["Não tratado", "Em andamento", "Concluído", "Oportunidade"].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+
+                  <label className="muted" style={{ alignSelf: "start" }}>Comentário</label>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    placeholder="Escreva um comentário…"
+                    value={tratativaModal.text}
+                    onChange={(e) => setTratativaModal((s) => ({ ...s, text: e.target.value }))}
+                  />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <button
+                    className="btn"
+                    onClick={() => setTratativaModal((s) => ({ ...s, open: false }))}
+                    disabled={tratativaModal.busy}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="btn btn--primary"
+                    onClick={onSaveTratativa}
+                    disabled={tratativaModal.busy || (!tratativaModal.text && !tratativaModal.editingId)}
+                    title={tratativaModal.editingId ? "Salvar edição" : "Adicionar comentário"}
+                  >
+                    {tratativaModal.busy ? "Salvando…" : (tratativaModal.editingId ? "💾 Salvar" : "➕ Adicionar")}
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de comentários */}
+              <div className="tableCard">
+                <table className="table">
+                  <thead>
+                    <tr className="thead-title">
+                      <th className="th"><span className="th__inner"><span>Data</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Status</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Texto</span></span></th>
+                      <th className="th"><span className="th__inner"><span>Ações</span></span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tratativaModal.comments.map((c) => (
+                      <tr key={c.id}>
+                        <td className="td td--nowrap">{msToDMY(isoToMs(c.created_at))}</td>
+                        <td className="td">{c.status ?? "—"}</td>
+                        <td className="td">{c.text}</td>
+                        <td className="td td--nowrap">
+                          <button
+                            className="btn btn--ghost"
+                            onClick={() => onEditComment(c)}
+                            disabled={tratativaModal.busy}
+                          >
+                            ✏️ Editar
+                          </button>{" "}
+                          <button
+                            className="btn btn--ghost"
+                            onClick={() => onDeleteComment(c)}
+                            disabled={tratativaModal.busy}
+                          >
+                            🗑️ Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {tratativaModal.comments.length === 0 && (
+                      <tr>
+                        <td className="td td--center" colSpan={4}>Sem comentários.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
