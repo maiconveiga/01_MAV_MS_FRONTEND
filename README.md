@@ -93,7 +93,7 @@ pip3 install -r Requirements.txt
 npm run build
 ```
 ```bash
-npm install -g serve 
+sudo npm install -g serve 
 serve -s dist ou serve -s dist -l 80
 pm2 start "serve -s dist -l 80" --name MAV_FRONTEND
 ```

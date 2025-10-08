@@ -163,17 +163,18 @@ export default function App() {
   // --- streaming buffer para micro-batch sem flicker ---
 const inflightAbort = useRef<AbortController | null>(null);
 const bufferRef = useRef<AlarmItem[]>([]);
-const flushTimerRef = useRef<number | null>(null);
-const pushChunk = useCallback((chunk: AlarmItem[]) => {
-  bufferRef.current.push(...chunk);
-  if (flushTimerRef.current != null) return;
-  flushTimerRef.current = window.setTimeout(() => {
-    const toAdd = bufferRef.current;
-    bufferRef.current = [];
-    flushTimerRef.current = null;
-    if (toAdd.length) setItems(prev => [...prev, ...toAdd]);
-  }, 90);
-}, [setItems]);const [catalogLocal, setCatalogLocal] = useState<CatalogApiLoose[]>([]);
+// const flushTimerRef = useRef<number | null>(null);
+// const pushChunk = useCallback((chunk: AlarmItem[]) => {
+//   bufferRef.current.push(...chunk);
+//   if (flushTimerRef.current != null) return;
+//   flushTimerRef.current = window.setTimeout(() => {
+//     const toAdd = bufferRef.current;
+//     bufferRef.current = [];
+//     flushTimerRef.current = null;
+//     if (toAdd.length) setItems(prev => [...prev, ...toAdd]);
+//   }, 90);
+// },[setItems]);
+  const [catalogLocal, setCatalogLocal] = useState<CatalogApiLoose[]>([]);
   const [serverNameByBase, setServerNameByBase] = useState<Record<string, string>>({});
   const [offsetByBase, setOffsetByBase] = useState<Record<string, number>>({});
 
