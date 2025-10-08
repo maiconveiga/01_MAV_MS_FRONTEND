@@ -3,6 +3,29 @@ import "./App.css";
 import type { CatalogApi, Session, AlarmItem } from "./types";
 import { fetchCatalog, createApi, updateApi, deleteApi, getApiId } from "./services/manager";
 import { loginAndGetToken, collectAlarmsBatch } from "./services/collector";
+/* ===== Perf helpers (não afetam layout) ===== */
+function pLimit(limit: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+  const next = () => { active--; queue.shift()?.(); };
+  return async function run<T>(fn: () => Promise<T>): Promise<T> {
+    if (active >= limit) await new Promise<void>(r => queue.push(r));
+    active++;
+    try { return await fn(); } finally { next(); }
+  };
+}
+
+const tokenCache = new Map<string, { token: string; exp: number }>();
+const TOKEN_TTL_MS = 15 * 60_000;
+async function getTokenCached(baseUrl: string, usuario?: string, senha?: string): Promise<string> {
+  const k = `${baseUrl}::${usuario ?? ""}`;
+  const hit = tokenCache.get(k);
+  const now = Date.now();
+  if (hit && hit.exp > now) return hit.token;
+  const t = await loginAndGetToken({ base_url: baseUrl, usuario: usuario!, senha: senha!, verify_ssl: false });
+  tokenCache.set(k, { token: t, exp: now + TOKEN_TTL_MS });
+  return t;
+}
 
 /** Permite campos opcionais que usamos no front mas podem não existir no tipo estrito. */
 type CatalogApiLoose = CatalogApi & {
@@ -137,7 +160,20 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AlarmItem[]>([]);
 
-  const [catalogLocal, setCatalogLocal] = useState<CatalogApiLoose[]>([]);
+  // --- streaming buffer para micro-batch sem flicker ---
+const inflightAbort = useRef<AbortController | null>(null);
+const bufferRef = useRef<AlarmItem[]>([]);
+const flushTimerRef = useRef<number | null>(null);
+const pushChunk = useCallback((chunk: AlarmItem[]) => {
+  bufferRef.current.push(...chunk);
+  if (flushTimerRef.current != null) return;
+  flushTimerRef.current = window.setTimeout(() => {
+    const toAdd = bufferRef.current;
+    bufferRef.current = [];
+    flushTimerRef.current = null;
+    if (toAdd.length) setItems(prev => [...prev, ...toAdd]);
+  }, 90);
+}, [setItems]);const [catalogLocal, setCatalogLocal] = useState<CatalogApiLoose[]>([]);
   const [serverNameByBase, setServerNameByBase] = useState<Record<string, string>>({});
   const [offsetByBase, setOffsetByBase] = useState<Record<string, number>>({});
 
@@ -330,6 +366,7 @@ export default function App() {
   const STATUS_TTL_MS = 60_000;
 
 const COMMENTS_HOST = "10.2.1.133";
+// const COMMENTS_HOST = "127.0.0.1";
   // const COMMENTS_HOST = import.meta.env.VITE_COMMENTS_HOST || "localhost";
   const getVersionForBase = (baseUrl: string): string => {
     const hit = (catalogLocal as CatalogApiLoose[]).find((c) => c.BaseUrl === baseUrl)?.Versao;
@@ -342,7 +379,7 @@ const COMMENTS_HOST = "10.2.1.133";
   const referenceForGroup = (g: GroupRow) => g.itemReference;
 
   const apiListCommentsByReference = useCallback(async (g: GroupRow, reference: string) => {
-    const r = await fetch(`${commentsOriginForGroup(g)}/comments?reference=${encodeURIComponent(reference)}&pageSize=1000`);
+    const r = await fetch(`${commentsOriginForGroup(g)}/comments?reference=${encodeURIComponent(reference)}&pageSize=1000`);//PGSIZE
     if (!r.ok) throw new Error(`list ${r.status}`);
     return (await r.json()) as Comment[];
   }, []);
@@ -451,89 +488,68 @@ const COMMENTS_HOST = "10.2.1.133";
   const clearApiErrors = useCallback(() => setApiErrors([]), []);
 
   const reload = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      clearApiErrors();
+  // cancela rodada anterior
+  inflightAbort.current?.abort();
+  const ac = new AbortController();
+  inflightAbort.current = ac;
 
-      const catalog = await fetchCatalog();
-      setCatalogLocal(catalog as CatalogApiLoose[]);
+  try {
+    setLoading(true);
+    setError(null);
+    clearApiErrors();
+    bufferRef.current = [];
+    setItems([]);
 
-      const nameBy: Record<string, string> = {};
-      const offBy: Record<string, number> = {};
-      for (const a of catalog as CatalogApiLoose[]) {
-        nameBy[a.BaseUrl] = a.Servidor || a.BaseUrl.replace(/^https?:\/\//, "");
-        offBy[a.BaseUrl] = a.offset ?? 0;
-      }
-      setServerNameByBase(nameBy);
-      setOffsetByBase(offBy);
+    // 1) catálogo
+    const catalog = await fetchCatalog();
+    setCatalogLocal(catalog as CatalogApiLoose[]);
 
-      const aggregated: AlarmItem[] = [];
-      for (const a of catalog as CatalogApiLoose[]) {
-        const baseUrl = a.BaseUrl;
-        let port = "";
-        try {
-          const u = new URL(baseUrl);
-          port = u.port || (u.protocol === "https:" ? "443" : "80");
-        } catch {
-          addApiError({
-            id: `${baseUrl}::url`,
-            title: "Metasys IP inoperante",
-            details: `BaseUrl inválida no catálogo: ${baseUrl}. Verifique o IP/porta/versão.`,
-          });
-          continue;
-        }
-
-        let token: string | null = null;
-        try {
-          token = await loginAndGetToken({ base_url: baseUrl, usuario: a.Usuario, senha: a.Senha, verify_ssl: false });
-        } catch (e: any) {
-          const msg = (e?.message ?? String(e)).toLowerCase();
-          if (msg.includes("failed to fetch") || msg.includes("network") || msg.includes("connect") || msg.includes("timeout")) {
-            addApiError({
-              id: `${baseUrl}::collector-offline`,
-              title: `API data colletor (${port}) offline`,
-              details: `Não foi possível conectar ao Data Collector em ${baseUrl} (porta ${port}). Detalhes: ${e?.message ?? String(e)}`,
-              port,
-            });
-          } else {
-            addApiError({
-              id: `${baseUrl}::login`,
-              title: "Metasys IP inoperante",
-              details: `Falha no login para ${baseUrl}. Verifique IP/credenciais. Detalhes: ${e?.message ?? String(e)}`,
-            });
-          }
-          continue;
-        }
-
-        try {
-          const session: Session = {
-            base_url: baseUrl,
-            token: token!,
-            offset: a.offset ?? 0,
-            servidor: a.Servidor,
-            pageSize: Math.max(1, a.QuantidadeAlarmes || 1),
-            page: 1,
-            verify_ssl: false,
-          };
-          const result = await collectAlarmsBatch([session]);
-          aggregated.push(...result);
-        } catch (e: any) {
-          addApiError({
-            id: `${baseUrl}::collect`,
-            title: "Metasys IP inoperante",
-            details: `Falha ao coletar alarmes de ${baseUrl}. Detalhes: ${e?.message ?? String(e)}`,
-          });
-        }
-      }
-      setItems(aggregated);
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
-    } finally {
-      setLoading(false);
-      setNextTs(Date.now() + REFRESH_MS);
+    const nameBy: Record<string, string> = {};
+    const offBy: Record<string, number> = {};
+    for (const a of catalog as CatalogApiLoose[]) {
+      nameBy[a.BaseUrl] = a.Servidor || a.BaseUrl.replace(/^https?:\/\//, "");
+      offBy[a.BaseUrl] = a.offset ?? 0;
     }
-  }, [REFRESH_MS, addApiError, clearApiErrors]);
+    setServerNameByBase(nameBy);
+    setOffsetByBase(offBy);
+
+    // 2) pipeline paralelo login->collect
+    const limit = pLimit(10);
+    const jobs = (catalog as CatalogApiLoose[]).map(api => limit(async () => {
+      if (ac.signal.aborted) return;
+      try {
+        const token = await getTokenCached(api.BaseUrl, api.Usuario, api.Senha);
+        if (ac.signal.aborted) return;
+        const session: Session = {
+          base_url: api.BaseUrl,
+          token,
+          offset: api.offset ?? 0,
+          servidor: api.Servidor,
+          pageSize: Math.max(1, api.QuantidadeAlarmes || 1),
+          page: 1,
+          verify_ssl: false,
+        };
+        const chunk = await collectAlarmsBatch([session], ac.signal);
+        if (ac.signal.aborted) return;
+        pushChunk(chunk);
+      } catch (e: any) {
+        if (ac.signal.aborted) return;
+        addApiError({
+          id: `${api.BaseUrl}::pipeline`,
+          title: "Falha na coleta",
+          details: e?.message ?? String(e),
+        });
+      }
+    }));
+
+    await Promise.allSettled(jobs);
+  } catch (e: any) {
+    if (!/AbortError/i.test(String(e?.name))) setError(e?.message ?? String(e));
+  } finally {
+    setLoading(false);
+    setNextTs(Date.now() + REFRESH_MS);
+  }
+}, [clearApiErrors, addApiError]);
 
   useEffect(() => { void reload(); }, [reload]);
 
@@ -1032,18 +1048,30 @@ const COMMENTS_HOST = "10.2.1.133";
                   const status = statusShownForGroup(g);
                   return (
                     <tr key={g.key}>
-                      <td className="td td--servidor">
-                        <span title="status"><Bell color={bell} /></span>
-                        {link ? (
-                          <a href={link} target="_blank" rel="noreferrer" className="link" title={g.servidorName}>
-                            {g.servidorName || "—"}
-                          </a>
-                        ) : (g.servidorName || "—")}
-                      </td>
+                        <td className="td">
+                        {/* <td className="td td--servidor"></td> */}
+                          <span title="status"><Bell color={bell} /></span>
+                          {link ? (
+                            <a href={link} target="_blank" rel="noreferrer" className="link" title={g.servidorName}>
+                              {g.servidorName || "—"}
+                            </a>
+                          ) : (g.servidorName || "—")}
+                        </td>
                       <td className="td">
                         <strong title={g.name || ""}>{g.name || g.itemReference || "(sem nome)"}</strong>{" "}
-                        {g.items.length > 1 && <span className="badge" title={`Este grupo possui ${g.items.length} ocorrências`}>x{g.items.length}</span>}
+                        {g.items.length > 1 && (
+                          <button
+                            className="badge badge--count"
+                            style={{ cursor: "pointer" }}
+                            title={`Ver ${g.items.length} ocorrências`}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); setModalGroup(g); }}
+                          >
+                            x{g.items.length}
+                          </button>
+                        )}
                       </td>
+
                       <td className="td" title={g.itemReference}>{g.itemReference || "—"}</td>
                       <td className="td" title={g.message}>{g.message ?? ""}</td>
                       <td className="td">{String(val)} {String(un)}</td>
