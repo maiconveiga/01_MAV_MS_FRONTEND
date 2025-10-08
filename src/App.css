@@ -405,3 +405,38 @@ body {
 .badge--count{ height:20px; font-size:11px; border-color:#d1d5db; background:#f9fafb; }
 .pill{ display:inline-block; padding:2px 8px; border:1px solid var(--bd-1); border-radius:999px; font-size:12px; }
 
+/* === FIX: Cards sempre cabem dentro da raia (coluna) === */
+
+/* 1) Em layout flex, as colunas podem "forçar" overflow se não tiverem min-inline-size: 0.
+      Mantemos o min-width existente (240px), mas garantimos que o conteúdo interno possa encolher. */
+.kanban__col {
+  min-inline-size: 0; /* permite o conteúdo reduzir e não empurrar a coluna vizinha */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 2) A área de cards deve ser uma única coluna e impedir overflow horizontal */
+.kanban__colBody {
+  display: grid;
+  grid-template-columns: 1fr;  /* 1 coluna = o card ocupa 100% da raia */
+  align-items: start;
+  overflow-x: hidden;          /* corta qualquer transbordo horizontal */
+}
+
+/* 3) O card respeita 100% da largura da raia e quebra palavras muito longas */
+.kanban__card {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;     /* quebra URLs/strings grandes */
+  word-break: break-word;
+  box-sizing: border-box;      /* já vem do reset, mas reforçamos aqui */
+}
+
+/* 4) Elementos internos do card não podem "esticar" o card para fora */
+.kanban__cardHead,
+.kanban__cardTitle,
+.kanban__cardMeta,
+.kanban__cardBody,
+.kanban__cardActions {
+  min-width: 0;                /* evita que linhas/flex internos causem overflow */
+}

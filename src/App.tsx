@@ -498,10 +498,12 @@ const COMMENTS_HOST = "10.2.1.133";
     setError(null);
     clearApiErrors();
     bufferRef.current = [];
-    setItems([]);
+    // setItems([]); //TESTE
+    
 
     // 1) catálogo
     const catalog = await fetchCatalog();
+    const nextItems: AlarmItem[] = []; // TESTE
     setCatalogLocal(catalog as CatalogApiLoose[]);
 
     const nameBy: Record<string, string> = {};
@@ -531,7 +533,9 @@ const COMMENTS_HOST = "10.2.1.133";
         };
         const chunk = await collectAlarmsBatch([session], ac.signal);
         if (ac.signal.aborted) return;
-        pushChunk(chunk);
+        // pushChunk(chunk); TESTE
+        nextItems.push(...chunk);
+
       } catch (e: any) {
         if (ac.signal.aborted) return;
         addApiError({
@@ -543,6 +547,8 @@ const COMMENTS_HOST = "10.2.1.133";
     }));
 
     await Promise.allSettled(jobs);
+    setItems(nextItems); //TESTE
+
   } catch (e: any) {
     if (!/AbortError/i.test(String(e?.name))) setError(e?.message ?? String(e));
   } finally {
@@ -1049,6 +1055,7 @@ const COMMENTS_HOST = "10.2.1.133";
                   return (
                     <tr key={g.key}>
                         <td className="td">
+
                         {/* <td className="td td--servidor"></td> */}
                           <span title="status"><Bell color={bell} /></span>
                           {link ? (
@@ -1056,9 +1063,11 @@ const COMMENTS_HOST = "10.2.1.133";
                               {g.servidorName || "—"}
                             </a>
                           ) : (g.servidorName || "—")}
+
                         </td>
                       <td className="td">
                         <strong title={g.name || ""}>{g.name || g.itemReference || "(sem nome)"}</strong>{" "}
+                        <br></br>
                         {g.items.length > 1 && (
                           <button
                             className="badge badge--count"
