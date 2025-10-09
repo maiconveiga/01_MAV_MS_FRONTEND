@@ -440,3 +440,55 @@ body {
 .kanban__cardActions {
   min-width: 0;                /* evita que linhas/flex internos causem overflow */
 }
+
+/* === Rolagem vertical na lista de comentários do modal de tratativas === */
+.modal__body--scroll {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;        /* altura máxima do corpo do modal */
+}
+
+.modal__body--scroll .comments-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  border-radius: var(--r-md);
+  max-height: 50vh;        /* garante rolagem apenas na área da lista */
+}
+/* === Scroll da lista de comentários dentro do modal de tratativas === */
+.comments-scroll {
+  max-height: 45vh;        /* altura máxima da lista */
+  overflow-y: auto;         /* rolagem vertical */
+  margin-top: 8px;
+  border-radius: var(--r-md);
+}
+
+/* Mantém o formulário e os botões visíveis acima da tabela */
+.modal__body.modal__body--scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* Corpo do modal: NÃO rola. Quem rola é só a lista. */
+.modal__body--scroll {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  overflow: hidden;           /* <— importante */
+  gap: 12px;
+}
+
+/* Form de status+comentário fica fixo (não cresce). */
+.tratativa-form {
+  flex: 0 0 auto;
+}
+
+/* Lista de comentários ocupa o restante e tem a rolagem. */
+.modal__body--scroll .comments-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 200px;
+  max-height: none;           /* override de qualquer max-height antigo */
+}
+
+/* (opcional) se quiser manter um limite hard, remova a linha acima e use:
+.comments-scroll { max-height: 45vh; } */

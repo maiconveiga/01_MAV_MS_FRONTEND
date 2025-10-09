@@ -1386,11 +1386,13 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
               </button>
             </div>
 
-            <div className="modal__body" style={{ display: "grid", gap: 12 }}>
+            {/* <div className="modal__body" style={{ display: "grid", gap: 12 }}> */}
+            <div className="modal__body modal__body--scroll">
+
               {tratativaModal.error && <div className="error">{tratativaModal.error}</div>}
 
               {/* Formulário de edição/criação */}
-              <div className="tableCard" style={{ padding: 12, display: "grid", gap: 8 }}>
+              <div className="tableCard tratativa-form" style={{ padding: 12, display: "grid", gap: 8 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 8 }}>
                   <label className="muted" style={{ alignSelf: "center" }}>Status</label>
                   <select
@@ -1433,7 +1435,7 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
               </div>
 
               {/* Lista de comentários */}
-              <div className="tableCard">
+              <div className="tableCard comments-scroll">
                 <table className="table">
                   <thead>
                     <tr className="thead-title">
