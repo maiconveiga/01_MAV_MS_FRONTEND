@@ -4,7 +4,6 @@ import type { CatalogApi, Session, AlarmItem } from "./types";
 import { fetchCatalog, createApi, updateApi, deleteApi, getApiId } from "./services/manager";
 import { loginAndGetToken, collectAlarmsBatch } from "./services/collector";
 
-// escapa HTML para não quebrar o relatório
 const esc = (s: unknown) =>
   String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -306,7 +305,6 @@ async function getTokenCached(baseUrl: string, usuario?: string, senha?: string)
   return t;
 }
 
-/** Permite campos opcionais que usamos no front mas podem não existir no tipo estrito. */
 type CatalogApiLoose = CatalogApi & {
   IP?: string;
   Versao?: string;
@@ -356,18 +354,17 @@ type GroupRow = {
   _latest: AlarmItem | null;
 };
 
-// ===== Helpers de Data (robustos e padronizados) =====
 const safeToMs = (s?: string) => {
   if (!s) return 0;
   const t = s.trim();
 
-  // ISO completo: 2025-10-03T12:34:56Z ou 2025-10-03T12:34:56
+
   if (/^\d{4}-\d{2}-\d{2}T/.test(t)) {
     const ms = Date.parse(t);
     return Number.isFinite(ms) ? ms : 0;
   }
 
-  // "YYYY-MM-DD HH:mm:ss"
+ 
   if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(t)) {
     const [datePart, timePart] = t.split(/\s+/);
     const [Y, M, D] = datePart.split("-").map((n) => Number(n));
@@ -376,20 +373,18 @@ const safeToMs = (s?: string) => {
     return dt.getTime();
   }
 
-  // "DD/MM/YYYY HH:mm:ss" ou "MM/DD/YYYY HH:mm:ss"
+
   if (/^\d{2}\/\d{2}\/\d{4}/.test(t)) {
     const [datePart, timePart] = t.split(/\s+/);
     const [a, b, Y] = datePart.split("/").map((n) => Number(n));
     const [h, m, s2] = (timePart || "00:00:00").split(":").map((n) => Number(n));
 
-    // Força interpretação pt-BR (DD/MM/YYYY).
     const D = a || 1;
     const M = b || 1;
     const dt = new Date(Y || 1970, (M || 1) - 1, D || 1, h || 0, m || 0, s2 || 0);
     return dt.getTime();
   }
 
-  // Fallback: tentar parse nativo
   const ms = Date.parse(t);
   return Number.isFinite(ms) ? ms : 0;
 };
@@ -401,7 +396,6 @@ const msToDMYTime = (ms?: number) => {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
 
-// (mantido apenas data/hora completa; versão só data foi removida para evitar warning)
 
 const isoToMs = (s?: string) => safeToMs(s);
 const addHours = (ms: number, h: number) => ms + h * 3_600_000;
@@ -439,7 +433,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AlarmItem[]>([]);
 
-  // --- streaming buffer para micro-batch sem flicker ---
 const inflightAbort = useRef<AbortController | null>(null);
 const bufferRef = useRef<AlarmItem[]>([]);
   const [catalogLocal, setCatalogLocal] = useState<CatalogApiLoose[]>([]);
@@ -628,7 +621,7 @@ const bufferRef = useRef<AlarmItem[]>([]);
   type Comment = { id: string; reference: string; text: string; status?: string | null; created_at: string };
   const [autoTratativa, setAutoTratativa] = useState<Record<string, string>>({});
   const [lastStatusByRef, setLastStatusByRef] = useState<Record<string, string>>({});
-  // usamos apenas o setter para evitar TS6133
+
   const [, setLastTextByRef] = useState<Record<string, string>>({});
   const [lastStatusAtByRef, setLastStatusAtByRef] = useState<Record<string, number>>({});
   const fetchedAtRef = useRef<Record<string, number>>({});
