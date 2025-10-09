@@ -492,3 +492,7 @@ body {
 
 /* (opcional) se quiser manter um limite hard, remova a linha acima e use:
 .comments-scroll { max-height: 45vh; } */
+.btn--secondary {
+  font-size: 12px;
+  padding: 4px 8px;
+}

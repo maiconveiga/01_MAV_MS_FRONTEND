@@ -3,7 +3,286 @@ import "./App.css";
 import type { CatalogApi, Session, AlarmItem } from "./types";
 import { fetchCatalog, createApi, updateApi, deleteApi, getApiId } from "./services/manager";
 import { loginAndGetToken, collectAlarmsBatch } from "./services/collector";
-/* ===== Perf helpers (não afetam layout) ===== */
+
+// escapa HTML para não quebrar o relatório
+const esc = (s: unknown) =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+function printGroupReport(
+  g: GroupRow,
+  comments: { created_at: string; text: string; status?: string | null }[],
+  occurrenceOf: (it: AlarmItem) => number
+) {
+  // monta linhas unificadas (ocorrências + comentários) em ordem cronológica
+  type R = { ts: number; tipo: "Alarme" | "Comentário"; status?: string; texto: string; extra?: string };
+  const rows: R[] = [];
+
+  // ocorrências
+  for (const it of g.items) {
+    const L: any = it;
+    const ts = occurrenceOf(it);
+    const valor = `${L.triggerValue_value ?? L.triggerValue?.value ?? ""} ${L.triggerValue_units ?? L.triggerValue?.units ?? ""}`.trim();
+    const extra = [
+      L.type ? `Tipo: ${L.type}` : "",
+      Number.isFinite(L.priority) ? `Prioridade: ${L.priority}` : "",
+      valor ? `Valor: ${valor}` : "",
+      L.isAcknowledged ? "Reconhecido" : "",
+      L.isDiscarded ? "Descartado" : "",
+    ].filter(Boolean).join(" · ");
+
+    rows.push({
+      ts,
+      tipo: "Alarme",
+      status: String(L.type ?? ""),
+      texto: String(L.message ?? ""),
+      extra,
+    });
+  }
+
+  // comentários
+  for (const c of comments) {
+    const ts = safeToMs(c.created_at);
+    rows.push({
+      ts,
+      tipo: "Comentário",
+      status: c.status ?? "",
+      texto: c.text ?? "",
+    });
+  }
+
+  rows.sort((a, b) => a.ts - b.ts);
+
+  // estilos do relatório (auto contido)
+  const styles = `
+    * { box-sizing: border-box; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif; color:#0f172a; margin:0; }
+    .wrap { padding: 28px; }
+    .hdr {
+      display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+      border-bottom: 2px solid #e5e7eb; padding-bottom: 14px; margin-bottom: 18px;
+    }
+    .title { margin:0; font-size: 22px; font-weight: 800; letter-spacing:.2px; color:#0f172a; }
+    .muted { color:#475569; }
+    .meta {
+      display:grid; gap:6px; grid-template-columns: 1fr 1fr;
+      background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; margin: 14px 0 20px;
+    }
+    .meta div { font-size: 13px; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid #e5e7eb; border-radius:999px; font-size:12px; background:#fff; }
+    .sec-title { font-size:14px; font-weight:700; margin:12px 0 8px; color:#0f172a; text-transform: uppercase; letter-spacing:.04em; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+    thead th {
+      text-align:left; background:#f8fafc; border:1px solid #e5e7eb; border-bottom:none;
+      padding:8px 10px; font-weight:700;
+    }
+    tbody td {
+      border:1px solid #f1f5f9; border-top:none; padding:8px 10px; vertical-align:top;
+    }
+    tbody tr:nth-child(even) td { background:#fbfdff; }
+    .ts { white-space: nowrap; }
+    .small { font-size:12px; color:#475569; }
+    .grid2 { display:grid; gap:6px; grid-template-columns: 1fr 1fr; }
+    .right { text-align:right; }
+    @media print {
+      .wrap { padding: 12mm; }
+      .meta { page-break-inside: avoid; }
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+    }
+  `;
+
+  const occurrences = g.items
+    .slice()
+    .sort((a, b) => occurrenceOf(a) - occurrenceOf(b))
+    .map((it) => {
+      const L: any = it;
+      const ts = occurrenceOf(it);
+      const valor = `${L.triggerValue_value ?? L.triggerValue?.value ?? ""} ${L.triggerValue_units ?? L.triggerValue?.units ?? ""}`.trim();
+      return `
+        <tr>
+          <td class="ts">${esc(msToDMYTime(ts))}</td>
+          <td>${esc(L.type ?? "—")}</td>
+          <td class="right">${esc(Number.isFinite(L.priority) ? L.priority : "—")}</td>
+          <td>${esc(valor)}</td>
+          <td>${esc(L.message ?? "")}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  const commentsRows = comments
+    .slice()
+    .sort((a, b) => safeToMs(a.created_at) - safeToMs(b.created_at))
+    .map((c) => `
+      <tr>
+        <td class="ts">${esc(msToDMYTime(safeToMs(c.created_at)))}</td>
+        <td>${esc(c.status ?? "—")}</td>
+        <td>${esc(c.text ?? "")}</td>
+      </tr>
+    `)
+    .join("");
+
+  const html = `
+    <!doctype html>
+    <html lang="pt-br">
+    <head>
+      <meta charset="utf-8">
+      <title>Relatório de alarmes - ${esc(g.name || g.itemReference || "item")}</title>
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <style>${styles}</style>
+    </head>
+    <body>
+      <div class="wrap">
+        <div class="hdr">
+          <div>
+            <h1 class="title">Relatório de alarmes</h1>
+            <div class="muted">Gerado em ${esc(msToDMYTime(Date.now()))}</div>
+          </div>
+          <div class="muted small">MANEGE ALARM VIEWER</div>
+        </div>
+
+        <div class="meta">
+          <div><strong>Servidor:</strong> ${esc(g.servidorName || "—")}</div>
+          <div><strong>Última ocorrência:</strong> ${esc(msToDMYTime(g.latestInsertedMs))}</div>
+          <div><strong>Nome:</strong> ${esc(g.name || "—")}</div>
+          <div><strong>Referência:</strong> ${esc(g.itemReference || "—")}</div>
+          <div><strong>Mensagem (mais recente):</strong> ${esc(g.message || "—")}</div>
+          <div><strong>Status atual:</strong> <span class="pill">${esc((g as any)._statusShown || "—")}</span></div>
+        </div>
+
+        <div class="sec-title">Ocorrências</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Tipo</th>
+              <th>Prior.</th>
+              <th>Valor</th>
+              <th>Mensagem</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${occurrences || `<tr><td colspan="5" class="small">Sem ocorrências.</td></tr>`}
+          </tbody>
+        </table>
+
+        <div class="sec-title" style="margin-top:18px;">Comentários</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Status</th>
+              <th>Texto</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${commentsRows || `<tr><td colspan="3" class="small">Sem comentários.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+
+      <script>
+        // aguarda pintura e chama impressão
+        setTimeout(() => { window.print(); }, 300);
+      </script>
+    </body>
+    </html>
+  `;
+
+  const w = window.open("", "_blank", "width=1100,height=800");
+  if (!w) { alert("Bloqueado pelo navegador. Permita pop-ups para imprimir."); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+
+function exportGroupToCSV(g: GroupRow, comments: any[], occurrenceOf: (it: AlarmItem) => number) {
+  // Colunas pensadas para importar bem no Excel PT-BR (usando ";")
+  const headerCols = [
+    "Data", "Origem", "Servidor", "Nome", "Referência", "Tipo", "Prioridade",
+    "Valor", "Unidade", "Status", "Texto"
+  ];
+
+  const q = (v: unknown) => {
+    // aspas duplas dobradas + preserva ; e quebras de linha
+    const s = String(v ?? "");
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  type Row = { data: number; cols: string[] };
+  const rows: Row[] = [];
+
+  // 1) Alarmes do card
+  for (const it of g.items) {
+    const L: any = it;
+    const dataMs = occurrenceOf(it);
+    rows.push({
+      data: dataMs,
+      cols: [
+        msToDMYTime(dataMs),
+        "Alarme",
+        g.servidorName || "",
+        g.name || "",
+        g.itemReference || "",
+        L.type ?? "",
+        String(L.priority ?? ""),
+        String(L.triggerValue_value ?? L.triggerValue?.value ?? ""),
+        String(L.triggerValue_units ?? L.triggerValue?.units ?? ""),
+        "",                              // status (não se aplica ao "evento alarme")
+        L.message ?? "",
+      ].map(q),
+    });
+  }
+
+  // 2) Comentários do card
+  for (const c of comments) {
+    const dataMs = safeToMs(c.created_at);
+    rows.push({
+      data: dataMs,
+      cols: [
+        msToDMYTime(dataMs),
+        "Comentário",
+        g.servidorName || "",
+        g.name || "",
+        g.itemReference || "",
+        "", "", "", "",                  // tipo/prioridade/valor/unidade (n/a)
+        c.status ?? "",
+        c.text ?? "",
+      ].map(q),
+    });
+  }
+
+  // 3) Ordena cronologicamente (crescente)
+  rows.sort((a, b) => a.data - b.data);
+
+  const header = headerCols.join(";");           // separador ;
+  const body = rows.map(r => r.cols.join(";")).join("\r\n"); // linhas CRLF
+  const csv = header + "\r\n" + body;
+
+  // BOM para Excel PT-BR reconhecer UTF-8
+  const bom = "\uFEFF";
+  const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+
+  // nome de arquivo seguro
+  const fname = `${(g.name || g.itemReference || "alarmes")
+    .replace(/[^\w\-]+/g, "_")
+    .slice(0, 80)}.csv`;
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+
 function pLimit(limit: number) {
   let active = 0;
   const queue: Array<() => void> = [];
@@ -907,7 +1186,6 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
                           {status}
                         </button>
                       </div>
-
                       {/* Data da última ocorrência */}
                       <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>{msToDMYTime(g.latestInsertedMs)}</div>
                     </div>
@@ -931,7 +1209,7 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
     <div className="page">
       {/* AppBar */}
       <div className="appbar">
-        <div className="appbar__title">METASYS ALARM VIEWER</div>
+        <div className="appbar__title">MANAGE ALARM VIEWER</div>
         <div className="appbar__actions">
           <button onClick={manualReload} disabled={loading} className="btn btn--primary" title={`Recarregar agora • próximo automático em ${fmtMMSS(leftSec)}`}>
             🔄 Recarregar ({fmtMMSS(leftSec)})
@@ -939,7 +1217,7 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
           <button className="btn" onClick={() => setView((v) => (v === "table" ? "kanban" : "table"))} title="Alternar entre Tabela e Kanban">
             {view === "table" ? "Kanban" : "Tabela"}
           </button>
-          <button onClick={openApisModal} className="btn btn--secondary" title="Gerenciar APIs">🧰 API's</button>
+          <button onClick={openApisModal} className="btn " title="Gerenciar APIs">🧰 API's</button>
           <button onClick={clearFilters} className="btn" title="Limpar filtros">🧹 Limpar filtros</button>
           {apiErrors.length === 0 ? (
             <button className="btn" disabled title="Sem erros detectados">✅ Online</button>
@@ -1416,6 +1694,39 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  {/* TESTE */}
+                  <button
+                    className="btn btn--secondary"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const grp = tratativaModal.group!;
+                        const comments = await apiListCommentsByReference(grp, grp.itemReference);
+                        exportGroupToCSV(grp, comments, occurrenceMsWithOffset);
+                      } catch (err) {
+                        alert("Erro ao exportar CSV: " + (err as Error).message);
+                      }
+                    }}
+                  >
+                    Exportar
+                  </button>
+
+
+                  <button
+                    className="btn btn--secondary"
+                    onClick={async () => {
+                      const grp = tratativaModal.group!;
+                      // injeta o status atual na instância do grupo (só para o cabeçalho do PDF)
+                      (grp as any)._statusShown = statusShownForGroup(grp);
+                      const comments = await apiListCommentsByReference(grp, grp.itemReference);
+                      printGroupReport(grp, comments, occurrenceMsWithOffset);
+                    }}
+                  >
+                    Imprimir
+                  </button>
+
+                  {/* TESTE */}
+                  
                   <button
                     className="btn"
                     onClick={() => setTratativaModal((s) => ({ ...s, open: false }))}
