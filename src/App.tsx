@@ -355,8 +355,7 @@ const bufferRef = useRef<AlarmItem[]>([]);
   const fetchedAtRef = useRef<Record<string, number>>({});
   const STATUS_TTL_MS = 60_000;
 
-// const COMMENTS_HOST = "10.2.1.133";
-const COMMENTS_HOST = import.meta.env.VITE_COMMENTS_HOST || "localhost";
+const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
   const getVersionForBase = (baseUrl: string): string => {
     const hit = (catalogLocal as CatalogApiLoose[]).find((c) => c.BaseUrl === baseUrl)?.Versao;
     if (hit) return String(hit);
@@ -364,7 +363,7 @@ const COMMENTS_HOST = import.meta.env.VITE_COMMENTS_HOST || "localhost";
     return m ? `V${m[1]}` : "V3";
   };
   const portFromVersion = (versao: string) => 5000 + (Number(versao.replace(/[^\d]/g, "")) || 3);
-  const commentsOriginForGroup = (g: GroupRow) => `http://${COMMENTS_HOST}:${portFromVersion(getVersionForBase(g.base))}`;
+  const commentsOriginForGroup = (g: GroupRow) => `http://${COLLECTOR_HOST}:${portFromVersion(getVersionForBase(g.base))}`;
   const referenceForGroup = (g: GroupRow) => g.itemReference;
 
   const apiListCommentsByReference = useCallback(async (g: GroupRow, reference: string) => {
