@@ -163,17 +163,6 @@ export default function App() {
   // --- streaming buffer para micro-batch sem flicker ---
 const inflightAbort = useRef<AbortController | null>(null);
 const bufferRef = useRef<AlarmItem[]>([]);
-// const flushTimerRef = useRef<number | null>(null);
-// const pushChunk = useCallback((chunk: AlarmItem[]) => {
-//   bufferRef.current.push(...chunk);
-//   if (flushTimerRef.current != null) return;
-//   flushTimerRef.current = window.setTimeout(() => {
-//     const toAdd = bufferRef.current;
-//     bufferRef.current = [];
-//     flushTimerRef.current = null;
-//     if (toAdd.length) setItems(prev => [...prev, ...toAdd]);
-//   }, 90);
-// },[setItems]);
   const [catalogLocal, setCatalogLocal] = useState<CatalogApiLoose[]>([]);
   const [serverNameByBase, setServerNameByBase] = useState<Record<string, string>>({});
   const [offsetByBase, setOffsetByBase] = useState<Record<string, number>>({});
@@ -366,9 +355,8 @@ const bufferRef = useRef<AlarmItem[]>([]);
   const fetchedAtRef = useRef<Record<string, number>>({});
   const STATUS_TTL_MS = 60_000;
 
-const COMMENTS_HOST = "10.2.1.133";
-// const COMMENTS_HOST = "127.0.0.1";
-  // const COMMENTS_HOST = import.meta.env.VITE_COMMENTS_HOST || "localhost";
+// const COMMENTS_HOST = "10.2.1.133";
+const COMMENTS_HOST = import.meta.env.VITE_COMMENTS_HOST || "localhost";
   const getVersionForBase = (baseUrl: string): string => {
     const hit = (catalogLocal as CatalogApiLoose[]).find((c) => c.BaseUrl === baseUrl)?.Versao;
     if (hit) return String(hit);
@@ -499,9 +487,7 @@ const COMMENTS_HOST = "10.2.1.133";
     setError(null);
     clearApiErrors();
     bufferRef.current = [];
-    // setItems([]); //TESTE
-    
-
+  
     // 1) catálogo
     const catalog = await fetchCatalog();
     const nextItems: AlarmItem[] = []; // TESTE
@@ -548,7 +534,7 @@ const COMMENTS_HOST = "10.2.1.133";
     }));
 
     await Promise.allSettled(jobs);
-    setItems(nextItems); //TESTE
+    setItems(nextItems);
 
   } catch (e: any) {
     if (!/AbortError/i.test(String(e?.name))) setError(e?.message ?? String(e));
