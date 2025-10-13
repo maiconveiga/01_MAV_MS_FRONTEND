@@ -320,6 +320,11 @@ type CatalogApiLoose = CatalogApi & {
 /* =========================
    Helpers / Types
    ========================= */
+const clip = (s: unknown, max = 60) => {
+  const t = String(s ?? "");
+  return t.length > max ? t.slice(0, max - 1) + "…" : t;
+};
+
 const toUiLink = (u?: string) => (u ?? "").replace(/\/api\/V?\d+$/i, "/UI/alarms/");
 
 type SortKey =
@@ -1157,11 +1162,15 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
                         <strong title={g.name || ""}>{g.name || g.itemReference || "(sem nome)"}</strong>
                       </div>
 
-                      {/* Meta */}
                       <div className="kanban__cardMeta">
-                        <span className="muted" title={g.itemReference}>{g.itemReference || "—"}</span>
+                        {(() => {
+                          const refFull = g.itemReference || "—";
+                          const refShort = clip(refFull, 35);
+                          return <span className="muted" title={refFull}>{refShort}</span>;
+                        })()}
                         <span className="pill">{String(val)} {String(un)}</span>
                       </div>
+
 
                       {/* Mensagem */}
                       {g.message && <div className="kanban__cardBody muted">{g.message}</div>}

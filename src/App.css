@@ -148,7 +148,7 @@ body {
 .badge{
   margin-left: var(--sp-2);
   font-size:12px;
-  padding: 2px 6px;
+  padding: 2px 10px;
   border-radius: 999px;
   border: 1px solid var(--bd-1);
   background: #fff;
@@ -402,7 +402,7 @@ body {
 .kanban__cardBody{ display:grid; gap:6px; }
 .kanban__cardActions{ display:flex; gap:6px; margin-top:8px; }
 
-.badge--count{ height:20px; font-size:11px; border-color:#d1d5db; background:#f9fafb; }
+.badge--count{ height:20px; font-size:12px; border-color:#d1d5db; background:#f9fafb; }
 .pill{ display:inline-block; padding:2px 8px; border:1px solid var(--bd-1); border-radius:999px; font-size:12px; }
 
 /* === FIX: Cards sempre cabem dentro da raia (coluna) === */
@@ -490,9 +490,4 @@ body {
   max-height: none;           /* override de qualquer max-height antigo */
 }
 
-/* (opcional) se quiser manter um limite hard, remova a linha acima e use:
-.comments-scroll { max-height: 45vh; } */
-.btn--secondary {
-  font-size: 12px;
-  padding: 4px 8px;
-}
+
