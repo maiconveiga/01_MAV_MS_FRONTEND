@@ -887,7 +887,7 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
     setFServidores([]); setFTipos([]); setFTratativas([]);
     setFNome(""); setFItemRef(""); setFMensagem(""); setFValorTxt("");
     setFPriorMin(""); setFPriorMax(""); setFAck(""); setFDesc("");
-    setFInsDe(""); setFInsAte("");
+    setFInsDe(""); setFInsAte(todayYMD());
   };
 
   const setSort = (k: SortKey, d: "asc" | "desc") => { setSortKey(k); setSortDir(d); };
