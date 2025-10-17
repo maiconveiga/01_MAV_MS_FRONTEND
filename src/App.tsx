@@ -320,6 +320,14 @@ type CatalogApiLoose = CatalogApi & {
 /* =========================
    Helpers / Types
    ========================= */
+const todayYMD = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 const clip = (s: unknown, max = 60) => {
   const t = String(s ?? "");
   return t.length > max ? t.slice(0, max - 1) + "…" : t;
@@ -459,7 +467,8 @@ const bufferRef = useRef<AlarmItem[]>([]);
   const [fAck, setFAck] = useState("");
   const [fDesc, setFDesc] = useState("");
   const [fInsDe, setFInsDe] = useState("");
-  const [fInsAte, setFInsAte] = useState("");
+  // const [fInsAte, setFInsAte] = useState("");
+  const [fInsAte, setFInsAte] = useState<string>(() => todayYMD());
 
   const [modalGroup, setModalGroup] = useState<GroupRow | null>(null);
   const [apisOpen, setApisOpen] = useState(false);
@@ -1297,8 +1306,21 @@ const COLLECTOR_HOST = import.meta.env.VITE_COLLECTOR_HOST || "localhost";
                   </th>
                   <th className="th">
                     <div className="grid2">
-                      <input type="date" value={fInsDe} onChange={(e) => setFInsDe(e.target.value)} className="input" />
-                      <input type="date" value={fInsAte} onChange={(e) => setFInsAte(e.target.value)} className="input" />
+                      {/* <input type="date" value={fInsDe} onChange={(e) => setFInsDe(e.target.value)} className="input" /> */}
+                      {/* <input type="date" value={fInsAte} onChange={(e) => setFInsAte(e.target.value)} className="input" /> */}
+                      <input
+                        type="date"
+                        value={fInsDe}
+                        onChange={(e) => setFInsDe(e.target.value)}
+                        className="input"
+                      />
+                      <input
+                        type="date"
+                        value={fInsAte}
+                        onChange={(e) => setFInsAte(e.target.value)}
+                        className="input"
+                        max={todayYMD()}          // ⬅ limita a data final a hoje
+                      />
                     </div>
                   </th>
                   <th className="th">
